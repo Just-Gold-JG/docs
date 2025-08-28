@@ -1,0 +1,6 @@
+.cover {
+    background: #fff !important;
+    /* your preferred color or image */
+    background-image: none !important;
+    /* remove gradient animation */
+}
