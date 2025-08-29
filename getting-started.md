@@ -6,4 +6,4 @@ Follow these steps to start using our product:
 2. Generate your API key.
 3. Install the SDK.
 
-👉 Once done, check the [API Reference](api.md).
+👉 Once done, check the [Integration](integraion).
