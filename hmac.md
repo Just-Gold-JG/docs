@@ -11,39 +11,27 @@
 
 All calls to JustGold’s B2B APIs **must be signed** using **HMAC-SHA256**. Partners obtain credentials in the **JustGold Partner Portal** and add these headers to each request:
 
-* `X-Access-Key`: Your public access key (identifier)
+* `X-Client-Id`: Your public access key (identifier)
 * `X-Timestamp`: UNIX time in **seconds** (UTC). Must be within **±300s** of server time.
 * `X-Signature`: Lowercase **hex** HMAC-SHA256 signature over a canonical string (spec below).
-* `X-Nonce` (recommended): A UUIDv4 unique per request to strengthen replay protection.
-* `Idempotency-Key` (recommended for POST/PUT): A unique value (UUID) for safely retrying.
-
-> 🔐 **Good practices baked in:** timestamp window, nonce, idempotent writes, body hashing, canonical query, and key rotation.
-
----
 
 ## Get your credentials
 
 1. Sign in to the Partner Portal: **`portal.justgold.me`**
 2. Go to **API Settings → Security**
-3. Create/rotate an **Access Key** (public) and **Secret** (private)
+3. Create/rotate an **Client Id** (public) and **Client Secret** (private)
 
-   * Store the **Secret** securely (e.g., KMS/SSM/Secrets Manager).
+   * Store the **Client Secret** securely (e.g., KMS/SSM/Secrets Manager).
    * **Never** embed in frontend/mobile apps.
    * Rotate periodically and on suspected exposure.
-
-> 💡 When you rotate keys, keep the old key active until all clients have switched, then revoke it.
-
----
 
 ## Required request headers
 
 | Header            | Required                 | Example                     | Notes                                                      |
 | ----------------- | ------------------------ | --------------------------- | ---------------------------------------------------------- |
-| `X-Access-Key`    | Yes                      | `jk_live_01H8…`             | Public identifier so the server can look up your secret.   |
+| `X-Client-Id`    | Yes                      | `jk_live_01H8…`             | Public identifier so the server can look up your secret.   |
 | `X-Timestamp`     | Yes                      | `1735550100`                | UNIX epoch **seconds**, UTC. Must be within **±300s**.     |
-| `X-Signature`     | Yes                      | `e462fd8f…`                 | Lowercase **hex** HMAC-SHA256 over the string-to-sign.     |
-| `X-Nonce`         | Recommended              | `6f8d3d8e-9e8a-4be2-8f67-…` | Unique per request; server may reject re-use within 5 min. |
-| `Idempotency-Key` | Recommended for POST/PUT | `3b1c7e6a-…`                | Enables safe retries of writes.                            |
+| `X-Signature`     | Yes                      | `e462fd8f…`                 | Lowercase 
 | `Content-Type`    | As applicable            | `application/json`          | Use UTF‑8.                                                 |
 
 ---
@@ -101,14 +89,14 @@ Send this as `X-Signature`.
 **Inputs**
 
 * Secret: `s3cr3t_test_key_justgold`
-* Access Key: `jk_live_example`
+* Client Id: `jk_live_example`
 * Method: `POST`
-* Path: `/v1/orders`
+* Path: `/v1/transactions/buy`
 * Query: *(none)*
 * Body (minified JSON, UTF‑8):
 
 ```json
-{"amount":"5000","currency":"INR","orderId":"12345"}
+{"amount":"5000","transactionId":"12345"}
 ```
 
 **Step A — Body hash**
@@ -129,7 +117,7 @@ X-Timestamp = 1735550100
 JG-HMAC-SHA256
 1735550100
 POST
-/v1/orders
+/v1/transaction/buy
 
 faaa1f00ee99cf6afdc2ee9ded75dcdeee2870f06e5ee23b9a886d73e1c6dfe8
 ```
@@ -143,19 +131,15 @@ X-Signature = e462fd8fae45c69a8eb9f73dcddeb949962ae89a5d6ff66ca33461a8e119ec89
 **Final request**
 
 ```http
-POST /v1/orders HTTP/1.1
+POST /v1/transactions/buy HTTP/1.1
 Host: api.justgold.me
 Content-Type: application/json; charset=utf-8
 X-Access-Key: jk_live_example
 X-Timestamp: 1735550100
-X-Nonce: 6f8d3d8e-9e8a-4be2-8f67-2b6a69f13ef1
 X-Signature: e462fd8fae45c69a8eb9f73dcddeb949962ae89a5d6ff66ca33461a8e119ec89
-Idempotency-Key: 3b1c7e6a-1a29-4c2b-a7a6-78b4f5a2ba7c
 
-{"amount":"5000","currency":"INR","orderId":"12345"}
+{"amount":"5000","transactionId":"12345"}
 ```
-
----
 
 ## Example (GET with query)
 
@@ -196,7 +180,7 @@ fa86029249a12a9531e269ef8986cba153a9839d741f6f38e457c6eb96bede76
 
 ## Client snippets
 
-### Node.js (TypeScript/JavaScript)
+### Node.js
 
 ```ts
 import crypto from 'crypto'
@@ -305,40 +289,6 @@ app.post('/v1/orders', (req, res) => {
 })
 ```
 
-### Python
-
-```py
-import hmac, hashlib, time, json, urllib.parse
-
-def canonical_query(query: dict[str, list[str] | str] | None) -> str:
-    if not query:
-        return ''
-    pairs = []
-    for k, v in query.items():
-        if isinstance(v, list):
-            for vv in v:
-                pairs.append((k, vv))
-        else:
-            pairs.append((k, v))
-    pairs.sort(key=lambda kv: (kv[0], kv[1]))
-    enc = lambda s: urllib.parse.quote(s, safe='-._~')
-    return '&'.join(f"{enc(k)}={enc(v)}" for k, v in pairs)
-
-
-def sign(secret: str, method: str, path: str, query: dict | None, body_bytes: bytes, timestamp: int) -> str:
-    content_sha256 = hashlib.sha256(body_bytes).hexdigest()
-    cqs = canonical_query(query)
-    string_to_sign = "\n".join([
-        'JG-HMAC-SHA256',
-        str(timestamp),
-        method.upper(),
-        path,
-        cqs,
-        content_sha256,
-    ])
-    return hmac.new(secret.encode(), string_to_sign.encode(), hashlib.sha256).hexdigest()
-```
-
 ### cURL (quick test)
 
 ```bash
@@ -346,14 +296,14 @@ def sign(secret: str, method: str, path: str, query: dict | None, body_bytes: by
 ACCESS_KEY="jk_live_example"
 SECRET="s3cr3t_test_key_justgold"
 TS=$(date +%s)
-BODY='{"amount":"5000","currency":"INR","orderId":"12345"}'
+BODY='{"amount":"5000","transactionId":"12345"}'
 CONTENT_SHA256=$(printf %s "$BODY" | openssl dgst -sha256 -binary | xxd -p -c 256)
 STRING_TO_SIGN=$(printf "JG-HMAC-SHA256\n%s\nPOST\n/v1/orders\n\n%s" "$TS" "$CONTENT_SHA256")
 SIG=$(printf %s "$STRING_TO_SIGN" | openssl dgst -sha256 -hmac "$SECRET" -hex | awk '{print $2}')
 
-curl -X POST "https://api.justgold.me/v1/orders" \
+curl -X POST "https://api.justgold.me/v1/transactions/buy" \
   -H "Content-Type: application/json" \
-  -H "X-Access-Key: $ACCESS_KEY" \
+  -H "X-Client-Id: $CLIENT_ID" \
   -H "X-Timestamp: $TS" \
   -H "X-Signature: $SIG" \
   -d "$BODY"
@@ -365,11 +315,9 @@ curl -X POST "https://api.justgold.me/v1/orders" \
 
 * [ ] Lookup **secret** by `X-Access-Key`.
 * [ ] Validate `X-Timestamp` is within **±300s**.
-* [ ] Optionally enforce **nonce uniqueness** within 5 minutes.
 * [ ] Recompute canonical query and **body hash using raw bytes**.
 * [ ] Rebuild string-to-sign and compute expected signature.
 * [ ] Use **constant-time** comparison (e.g., `timingSafeEqual`).
-* [ ] If `Idempotency-Key` present, de-duplicate writes for **24 hours**.
 
 ---
 
@@ -377,6 +325,7 @@ curl -X POST "https://api.justgold.me/v1/orders" \
 
 ```json
 {
+  "status":401,
   "error": "invalid_signature",
   "message": "Signature mismatch",
   "requestId": "a1b2c3d4",
@@ -388,8 +337,7 @@ curl -X POST "https://api.justgold.me/v1/orders" \
 
 * `invalid_signature` — signature does not match
 * `timestamp_out_of_range` — timestamp older/newer than allowed window
-* `access_key_not_found` — unknown or revoked access key
-* `nonce_replayed` — nonce already seen
+* `client_id` — unknown or revoked access key
 * `unsupported_content_type` — content type not allowed for endpoint
 
 ---
@@ -400,19 +348,18 @@ curl -X POST "https://api.justgold.me/v1/orders" \
 * **Rotate** keys periodically; maintain overlapped validity during rollouts.
 * **Store secrets** only in secure vaults (KMS/SSM/HashiCorp Vault), not in code or git.
 * **Least privilege:** scope keys to specific environments (sandbox vs prod).
-* **Logging:** log `X-Access-Key`, request path, and result — **never log secrets or full signatures**.
-* **Retries:** use `Idempotency-Key` for POST/PUT to avoid duplicates.
+* **Logging:** log `X-Client-Id`, request path, and result — **never log secrets or full signatures**.
 * **Rate limits:** respect published limits; exponential backoff on 429/5xx.
 
 ---
 
 ## Sandbox & health check
 
-* **Sandbox base URL:** `https://sandbox-api.justgold.me`
-* **Health:** `GET /v1/ping` (unsigned) and `GET /v1/ping/secure` (signed)
+* **Sandbox base URL:** `https://api.sandbox.justgold.me`
+* **Health:** `GET /v1/health` (unsigned) and `GET /v1/health/secure` (signed)
 
 ```http
-GET /v1/ping/secure HTTP/1.1
+GET /v1/health/secure HTTP/1.1
 X-Access-Key: jk_live_example
 X-Timestamp: 1735550160
 X-Signature: fa86029249a12a9531e269ef8986cba153a9839d741f6f38e457c6eb96bede76
@@ -426,26 +373,3 @@ X-Signature: fa86029249a12a9531e269ef8986cba153a9839d741f6f38e457c6eb96bede76
 * **Clock skew?** Check server/client time sources (NTP). Try again and verify your `X-Timestamp`.
 * **Proxy mutation?** Confirm that gateways/CDNs do not **rewrite the body** or query string.
 * **Hex vs base64?** We use **lowercase hex** everywhere.
-
----
-
-## Appendix: Minimal server verifier (pseudo-code)
-
-```text
-1) read headers: accessKey, timestamp, signature, nonce
-2) reject if |now - timestamp| > 300s
-3) secret = db.lookup(accessKey)
-4) canonicalQuery = canonicalize(request.query)
-5) contentSha256 = sha256_hex(rawBodyBytes)
-6) stringToSign = joinWithNewlines('JG-HMAC-SHA256', timestamp, METHOD, PATH, canonicalQuery, contentSha256)
-7) expected = hmac_sha256_hex(secret, stringToSign)
-8) constant_time_compare(signature, expected)
-9) if nonce provided: ensure not seen before (TTL 5 min)
-```
-
-
-
-<div class="docsify-footer-links" style="display:flex; justify-content:space-between;">
-  <a href="#/hmac">⬅ HMac Signature </a>
-  <a href="#/oauth2"> OAuth2 ➡</a>
-</div>

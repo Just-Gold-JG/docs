@@ -4,7 +4,7 @@ This documentation covers B2B partner integration with JustGold🚀
 
 ## Features
 - Easy API integration
-- Lightweight SDK
+- Multiple ways to integrate 
 - Clear API documentation
 
 ## Next Steps
