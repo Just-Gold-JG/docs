@@ -2,6 +2,7 @@
 
 * [Home](README)
 * [Getting Started](getting-started)
+* [Overview](overview)
 * [Integration](integration)
   - [HMAC Signature Auth](/hmac)
   - [OAuth2 JWT Auth](/oauth2)
