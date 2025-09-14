@@ -1,11 +1,16 @@
 # HMAC Signature Authentication
 
+![Docs in Progress](https://img.shields.io/badge/status-in%20progress-blue)
+
+> ℹ️ **Docs in Progress**  
+> This section is still being worked on. Content may change.
+
+
 > **Audience:** B2B partners integrating with JustGold APIs
 
 > **Purpose:** Sign every request with an HMAC to ensure authenticity, integrity, and replay protection.
 
 
----
 
 ## Overview
 

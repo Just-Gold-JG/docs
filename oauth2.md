@@ -1,8 +1,14 @@
 # OAuth2 JWT Authentication
 
-Audience: B2B partners integrating with JustGold APIs
-Purpose: Secure authentication via OAuth2 JWTs signed with your private key and verified by JustGold using your uploaded public key.
-Docsify: Save this file as docs/oauth2-jwt.md and link it from your _sidebar.md.
+![Docs in Progress](https://img.shields.io/badge/status-in%20progress-blue)
+
+> ℹ️ **Docs in Progress**  
+> This section is still being worked on. Content may change.
+
+> **Audience:** B2B partners integrating with JustGold APIs
+
+> **Purpose:** Secure authentication via OAuth2 JWTs signed with your private key and verified by JustGold using your uploaded public key.
+
 
 ### Overview
 

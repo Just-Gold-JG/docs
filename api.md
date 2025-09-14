@@ -1,5 +1,10 @@
 # API Reference
 
+![Docs in Progress](https://img.shields.io/badge/status-in%20progress-blue)
+
+> ℹ️ **Docs in Progress**  
+> This section is still being worked on. Content may change.
+
 This section provides details about the **JustGold API** endpoints available for B2B partners.  
 All requests must be authenticated via **hmac signature** or include a valid **JWT** with appropriate scopes.
 
