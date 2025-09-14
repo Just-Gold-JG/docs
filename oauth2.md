@@ -17,6 +17,9 @@ JustGold supports OAuth2-style JWT authentication.
 - JustGold verifies the signature using the partner’s uploaded public key from portal.justgold.me.
 - This ensures that only requests issued by you are accepted.
 
+<img src="assets/oauth.png"  style="display: block; margin: 0 auto;">
+
+
 ### Setup
 1.	Generate an asymmetric key pair (RSA 2048 or 4096, or EC P-256).
 

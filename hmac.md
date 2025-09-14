@@ -20,6 +20,10 @@ All calls to JustGold’s B2B APIs **must be signed** using **HMAC-SHA256**. Par
 * `X-Timestamp`: UNIX time in **seconds** (UTC). Must be within **±300s** of server time.
 * `X-Signature`: Lowercase **hex** HMAC-SHA256 signature over a canonical string (spec below).
 
+
+<img src="assets/hmac.png"  style="display: block; margin: 0 auto;">
+
+
 ## Get your credentials
 
 1. Sign in to the Partner Portal: **`portal.justgold.me`**
