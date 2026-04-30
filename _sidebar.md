@@ -2,9 +2,13 @@
 
 * [Home](README)
 * [Getting Started](getting-started)
-* [Overview](overview)
-* [Integration](integration)
-  - [HMAC Signature Auth](/hmac)
-  - [OAuth2 JWT Auth](/oauth2)
-
-* [API Reference](api)
+* [Authentication](authentication)
+* [Request Signing](request-signing)
+* [Integration Flow](integration-flow)
+* API Reference
+  * [POST /v1/customers](api/customers)
+  * [GET /v1/prices](api/prices)
+  * [POST /v1/preview](api/preview)
+  * [POST /v1/buy](api/buy)
+  * [POST /v1/sell](api/sell)
+* [Errors](errors)
