@@ -10,9 +10,9 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
-  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css">
-  <link rel="stylesheet" href="/styles/cover.css">
-  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css?v=20260430-1">
+  <link rel="stylesheet" href="/styles/cover.css?v=20260430-1">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.css?v=20260430-2">
 </head>
 
 <body>
@@ -25,7 +25,7 @@
       loadSidebar: true,
       loadNavbar: true,
       mermaidConfig: {
-        startOnLoad: true,
+        querySelector: '.mermaid',
         theme: 'default'
       },
       requestHeaders: {
@@ -33,11 +33,16 @@
       }
     }
   </script>
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+
+    mermaid.initialize({ startOnLoad: true, theme: "default" });
+    window.mermaid = mermaid;
+  </script>
   <!-- Docsify v4 -->
-  <script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
-  <script src="//cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
-  <script src="//cdn.jsdelivr.net/npm/docsify-mermaid@2/dist/docsify-mermaid.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/QingWei-Li/docsify-pagination@1.0.2/dist/docsify-pagination.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/docsify@4?v=20260430-2"></script>
+  <script src="//unpkg.com/docsify-mermaid@2.0.1/dist/docsify-mermaid.js?v=20260430-2"></script>
+  <script src="https://cdn.jsdelivr.net/gh/QingWei-Li/docsify-pagination@1.0.2/dist/docsify-pagination.min.js?v=20260430-2"></script>
 </body>
 
 </html>
