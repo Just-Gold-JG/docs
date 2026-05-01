@@ -14,21 +14,25 @@ sequenceDiagram
     Customer->>Partner: Create account
     Partner->>JustGold: POST /v1/customers
     JustGold-->>Partner: customerId
+    Partner->>Partner: Verify response signature
     Partner-->>Customer: Account ready
 
     Customer->>Partner: Check gold prices
     Partner->>JustGold: GET /v1/prices
     JustGold-->>Partner: buyPrice, sellPrice
+    Partner->>Partner: Verify response signature
     Partner-->>Customer: Show latest prices
 
     Customer->>Partner: Preview buy request
     Partner->>JustGold: POST /v1/preview
     JustGold-->>Partner: previewId, price, estimatedQuantity
+    Partner->>Partner: Verify response signature
     Partner-->>Customer: Show buy preview
 
     Customer->>Partner: Confirm buy order
     Partner->>JustGold: POST /v1/buy
     JustGold-->>Partner: orderId, status
+    Partner->>Partner: Verify response signature
     Partner-->>Customer: Order placed
 ```
 
@@ -41,24 +45,22 @@ sequenceDiagram
     participant Partner as Partner Platform
     participant JustGold as JustGold API
 
-    Customer->>Partner: Create account
-    Partner->>JustGold: POST /v1/customers
-    JustGold-->>Partner: customerId
-    Partner-->>Customer: Account ready
-
     Customer->>Partner: Check gold prices
     Partner->>JustGold: GET /v1/prices
     JustGold-->>Partner: buyPrice, sellPrice
+    Partner->>Partner: Verify response signature
     Partner-->>Customer: Show latest prices
 
     Customer->>Partner: Preview sell request
     Partner->>JustGold: POST /v1/preview
     JustGold-->>Partner: previewId, price, estimatedAmount
+    Partner->>Partner: Verify response signature
     Partner-->>Customer: Show sell preview
 
     Customer->>Partner: Confirm sell order
     Partner->>JustGold: POST /v1/sell
     JustGold-->>Partner: orderId, status
+    Partner->>Partner: Verify response signature
     Partner-->>Customer: Order placed
 ```
 
@@ -92,8 +94,12 @@ Persist the following identifiers in your system:
 - Buy or sell order ID
 - Your own internal transaction reference
 
+## 6. Verify signed responses
+
+Before using any JustGold response, verify the response signature using the shared `client_secret`.
+
 ## Recommended backend flow
 
 ```text
-Create customer -> Get prices -> Preview -> Buy or Sell -> Store IDs and status
+Create customer -> Verify response -> Get prices -> Verify response -> Preview -> Verify response -> Buy or Sell -> Verify response -> Store IDs and status
 ```
