@@ -9,6 +9,6 @@
   * [Customers](api/customers)
   * [Prices](api/prices)
   * [Preview](api/preview)
-  * [POST /v1/buy](api/buy)
-  * [POST /v1/sell](api/sell)
+  * [Buy](api/buy)
+  * [Sell](api/sell)
 * [Errors](errors)
