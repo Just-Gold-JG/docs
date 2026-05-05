@@ -1,14 +1,18 @@
 # Customers
 
+Customer-related endpoints in JustGold.
+
+## Create customer
+
 Creates a new customer account in JustGold.
 
-## Endpoint
+### Endpoint
 
 ```http
 POST /v1/customers
 ```
 
-## Authentication
+### Authentication
 
 This endpoint requires:
 
@@ -18,7 +22,7 @@ This endpoint requires:
 
 See [Authentication](../authentication.md) and [Request Signing](../request-signing.md).
 
-## Request body
+### Request body
 
 All fields are required.
 
@@ -32,7 +36,7 @@ All fields are required.
 | `phone.countryCode` | string | Yes | Phone country code. |
 | `phone.number` | string | Yes | Phone number without country code. |
 
-## Sample request
+### Sample request
 
 ```json
 {
@@ -47,7 +51,7 @@ All fields are required.
 }
 ```
 
-## Sample response
+### Sample response
 
 ```json
 {
@@ -55,12 +59,72 @@ All fields are required.
 }
 ```
 
-## Responses
+### Responses
 
 | Status | Meaning |
 | --- | --- |
 | `201 Created` | Customer account created successfully. |
 | `409 Conflict` | Customer account already exists. |
 | `400 Bad Request` | Request payload is invalid or required fields are missing. |
+| `429 Too Many Requests` | Rate limit exceeded. Retry later. |
+| `500 Internal Server Error` | An unexpected error occurred on the JustGold side. |
+
+## Customer holdings
+
+Returns the current holdings summary for gold and silver.
+
+### Endpoint
+
+```http
+GET /v1/customers/holdings
+```
+
+### Authentication
+
+This endpoint requires:
+
+- `X-Client-Id`
+- `X-Timestamp`
+- `X-Signature`
+
+See [Authentication](../authentication.md) and [Request Signing](../request-signing.md).
+
+### Sample response
+
+```json
+{
+  "gold": {
+    "currentQuantity": "0",
+    "avgBuyPrice": "0",
+    "invested": "0",
+    "sellValue": "0",
+    "currentValue": "0",
+    "returns": "0",
+    "pnlPercent": "0"
+  },
+  "silver": {
+    "currentQuantity": "0",
+    "avgBuyPrice": "0",
+    "invested": "0",
+    "sellValue": "0",
+    "currentValue": "0",
+    "returns": "0",
+    "pnlPercent": "0"
+  },
+  "totals": {
+    "invested": "0",
+    "currentValue": "0",
+    "returns": "0",
+    "pnlPercent": "0",
+    "sellValue": "0"
+  }
+}
+```
+
+### Responses
+
+| Status | Meaning |
+| --- | --- |
+| `200 OK` | Holdings fetched successfully. |
 | `429 Too Many Requests` | Rate limit exceeded. Retry later. |
 | `500 Internal Server Error` | An unexpected error occurred on the JustGold side. |
