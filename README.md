@@ -1,6 +1,6 @@
 # JustGold B2B Partner Docs
 
-This documentation is for partners integrating with JustGold trading APIs.
+This documentation is for partners integrating with JustGold APIs.
 
 ## What you can do
 
@@ -11,12 +11,6 @@ This documentation is for partners integrating with JustGold trading APIs.
 - Secure every request with HMAC
 
 ## API summary
-
-Base path:
-
-```text
-/v1
-```
 
 Available endpoints:
 

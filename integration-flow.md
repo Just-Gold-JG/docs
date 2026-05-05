@@ -97,9 +97,3 @@ Persist the following identifiers in your system:
 ## 6. Verify signed responses
 
 Before using any JustGold response, verify the response signature using the shared `client_secret`.
-
-## Recommended backend flow
-
-```text
-Create customer -> Verify response -> Get prices -> Verify response -> Preview -> Verify response -> Buy or Sell -> Verify response -> Store IDs and status
-```

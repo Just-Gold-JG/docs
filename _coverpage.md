@@ -3,4 +3,4 @@
 # JustGold B2B Partner Docs
 > Secure integration guide for B2B partners
 
-[Get Started](getting-started.md)
+[Get Started](README.md)
