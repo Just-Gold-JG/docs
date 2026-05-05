@@ -62,4 +62,5 @@ All fields are required.
 | `201 Created` | Customer account created successfully. |
 | `409 Conflict` | Customer account already exists. |
 | `400 Bad Request` | Request payload is invalid or required fields are missing. |
+| `429 Too Many Requests` | Rate limit exceeded. Retry later. |
 | `500 Internal Server Error` | An unexpected error occurred on the JustGold side. |

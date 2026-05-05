@@ -7,7 +7,7 @@
 * [Integration Flow](integration-flow)
 * API Reference
   * [Customers](api/customers)
-  * [GET /v1/prices](api/prices)
+  * [Prices](api/prices)
   * [POST /v1/preview](api/preview)
   * [POST /v1/buy](api/buy)
   * [POST /v1/sell](api/sell)
