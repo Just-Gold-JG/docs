@@ -24,8 +24,8 @@ sequenceDiagram
     Partner-->>Customer: Show latest prices
 
     Customer->>Partner: Preview buy request
-    Partner->>JustGold: POST /v1/preview
-    JustGold-->>Partner: previewId, price, estimatedQuantity
+    Partner->>JustGold: POST /v1/buy/preview
+    JustGold-->>Partner: quoteId
     Partner->>Partner: Verify response signature
     Partner-->>Customer: Show buy preview
 
@@ -52,8 +52,8 @@ sequenceDiagram
     Partner-->>Customer: Show latest prices
 
     Customer->>Partner: Preview sell request
-    Partner->>JustGold: POST /v1/preview
-    JustGold-->>Partner: previewId, price, estimatedAmount
+    Partner->>JustGold: POST /v1/sell/preview
+    JustGold-->>Partner: quoteId
     Partner->>Partner: Verify response signature
     Partner-->>Customer: Show sell preview
 
@@ -74,7 +74,12 @@ Use `GET /v1/prices` to display the current buy and sell prices before asking th
 
 ## 3. Preview the order
 
-Use `POST /v1/preview` to calculate the expected quantity, amount, fees, and totals before placing a final order.
+Use:
+
+- `POST /v1/buy/preview` for buy quotes
+- `POST /v1/sell/preview` for sell quotes
+
+to generate a quote before placing a final order.
 
 ## 4. Place the order
 

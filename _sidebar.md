@@ -8,7 +8,7 @@
 * API Reference
   * [Customers](api/customers)
   * [Prices](api/prices)
-  * [POST /v1/preview](api/preview)
+  * [Preview](api/preview)
   * [POST /v1/buy](api/buy)
   * [POST /v1/sell](api/sell)
 * [Errors](errors)

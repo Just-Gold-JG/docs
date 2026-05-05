@@ -16,7 +16,8 @@ Available endpoints:
 
 - `POST /v1/customers`
 - `GET /v1/prices`
-- `POST /v1/preview`
+- `POST /v1/buy/preview`
+- `POST /v1/sell/preview`
 - `POST /v1/buy`
 - `POST /v1/sell`
 

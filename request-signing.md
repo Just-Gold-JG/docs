@@ -33,7 +33,7 @@ Rules:
 ### Request
 
 ```http
-POST /v1/preview
+POST /v1/buy/preview
 X-Client-Id: jg_partner_123
 X-Timestamp: 1767225600
 Content-Type: application/json
@@ -47,7 +47,7 @@ Content-Type: application/json
 
 ```text
 POST
-/v1/preview
+/v1/buy/preview
 1767225600
 {"type":"buy","amount":5000,"currency":"AED"}
 ```
@@ -81,7 +81,7 @@ const body = JSON.stringify({
 
 const signature = createSignature({
   method: "POST",
-  path: "/v1/preview",
+  path: "/v1/buy/preview",
   timestamp,
   body,
   clientSecret: process.env.JUSTGOLD_CLIENT_SECRET,
