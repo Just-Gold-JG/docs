@@ -20,27 +20,19 @@ See [Authentication](../authentication.md) and [Request Signing](../request-sign
 
 ## Request body
 
-This endpoint uses the same parameters as the buy preview request, with `quoteId` also required.
+This endpoint uses the quote returned by the buy preview endpoint.
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `currency` | string | Yes | Currency code. |
-| `amount` | number | Conditional | Required if `quantity` is not provided. |
-| `quantity` | number | Conditional | Required if `amount` is not provided. |
-| `metal` | string | Yes | Metal for the order, for example `Gold` or `Silver`. |
-| `quoteId` | string | Yes | Quote identifier returned by the preview endpoint. |
-
-Either `amount` or `quantity` must be provided.
+| `quoteId` | string | Yes | Quote identifier returned by the preview endpoint. Must be a UUID. |
+| `customerId` | string | Yes | Customer identifier. |
 
 ## Sample request
 
 ```json
 {
-  "currency": "AED",
-  "amount": 100,
-  "quantity": 0,
-  "metal": "Gold",
-  "quoteId": "6818744f3f1b2c7a9d5e4321"
+  "quoteId": "aa1c4362-7b9c-4f48-8a2b-4d4bc3e19412",
+  "customerId": "6818744f3f1b2c7a9d5e4321"
 }
 ```
 
@@ -48,7 +40,15 @@ Either `amount` or `quantity` must be provided.
 
 ```json
 {
-  "id": "6818744f3f1b2c7a9d5e4321"
+  "id": "682710cc3f1b2c7a9d5e1111",
+  "type": "Buy",
+  "metal": "Gold",
+  "quantity": "0.1794172488147617",
+  "currency": "AED",
+  "quotedPrice": "557.36",
+  "actualPrice": "557.36",
+  "baseCurrencyQuotedPrice": "100",
+  "baseCurrencyActualPrice": "100"
 }
 ```
 
@@ -57,6 +57,9 @@ Either `amount` or `quantity` must be provided.
 | Status | Meaning |
 | --- | --- |
 | `201 Created` | Buy order placed successfully. |
-| `400 Bad Request` | Request payload is invalid or both `amount` and `quantity` are missing. |
+| `400 Bad Request` | Request payload is invalid, `quoteId` is missing, or `customerId` is invalid. |
+| `401 Unauthorized` | Organization context was not found for the authenticated partner. |
+| `404 Not Found` | Customer or organization was not found. |
+| `410 Gone` | Quote has expired. |
 | `429 Too Many Requests` | Rate limit exceeded. Retry later. |
 | `500 Internal Server Error` | An unexpected error occurred on the JustGold side. |

@@ -23,20 +23,18 @@ See [Authentication](../authentication.md) and [Request Signing](../request-sign
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `currency` | string | Yes | Currency code. |
-| `amount` | number | Conditional | Required if `quantity` is not provided. |
-| `quantity` | number | Conditional | Required if `amount` is not provided. |
-| `metal` | string | Yes | Metal for the quote, for example `Gold` or `Silver`. |
+| `metal` | string | Yes | Allowed values: `Gold`, `Silver`. |
+| `amount` | string | Conditional | Numeric string. Required if `quantity` is not provided. |
+| `quantity` | string | Conditional | Numeric string. Required if `amount` is not provided. |
 
-Either `amount` or `quantity` must be provided.
+Provide exactly one of `amount` or `quantity`.
+Both values must be positive when provided.
 
 ## Sample request
 
 ```json
 {
-  "currency": "AED",
-  "amount": 100,
-  "quantity": 0,
+  "amount": "100",
   "metal": "Gold"
 }
 ```
@@ -45,7 +43,14 @@ Either `amount` or `quantity` must be provided.
 
 ```json
 {
-  "quoteId": "6818744f3f1b2c7a9d5e4321"
+  "quoteId": "aa1c4362-7b9c-4f48-8a2b-4d4bc3e19412",
+  "metal": "Gold",
+  "currency": "AED",
+  "price": "557.36",
+  "quantity": "0.1794172488147617",
+  "amount": "100",
+  "vat": "0",
+  "total": "100"
 }
 ```
 
@@ -54,6 +59,8 @@ Either `amount` or `quantity` must be provided.
 | Status | Meaning |
 | --- | --- |
 | `200 OK` | Quote generated successfully. |
-| `400 Bad Request` | Request payload is invalid or both `amount` and `quantity` are missing. |
+| `400 Bad Request` | Request payload is invalid, both `amount` and `quantity` are missing, or both are provided. |
+| `401 Unauthorized` | Organization context was not found for the authenticated partner. |
+| `404 Not Found` | Organization was not found. |
 | `429 Too Many Requests` | Rate limit exceeded. Retry later. |
 | `500 Internal Server Error` | An unexpected error occurred on the JustGold side. |

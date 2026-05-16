@@ -16,7 +16,7 @@ Build the string to sign with these exact values:
 Rules:
 
 - `HTTP_METHOD` must be uppercase, for example `GET` or `POST`.
-- `REQUEST_PATH` must contain only the path, for example `/v1/prices`.
+- `REQUEST_PATH` must contain only the path, for example `/v1/prices/latest`.
 - `TIMESTAMP` must match the value sent in `X-Timestamp`.
 - `RAW_REQUEST_BODY` must be the exact JSON string sent over the wire.
 - For requests without a body, use an empty string for `RAW_REQUEST_BODY`.
@@ -40,7 +40,7 @@ Content-Type: application/json
 ```
 
 ```json
-{"type":"buy","amount":5000,"currency":"AED"}
+{"amount":"100","metal":"Gold"}
 ```
 
 ### String to sign
@@ -49,7 +49,7 @@ Content-Type: application/json
 POST
 /v1/buy/preview
 1767225600
-{"type":"buy","amount":5000,"currency":"AED"}
+{"amount":"100","metal":"Gold"}
 ```
 
 ### Node.js example
@@ -74,9 +74,8 @@ function createSignature({ method, path, timestamp, body, clientSecret }) {
 
 const timestamp = Math.floor(Date.now() / 1000);
 const body = JSON.stringify({
-  type: "buy",
-  amount: 5000,
-  currency: "AED",
+  amount: "100",
+  metal: "Gold",
 });
 
 const signature = createSignature({

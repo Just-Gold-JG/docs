@@ -18,20 +18,20 @@ sequenceDiagram
     Partner-->>Customer: Account ready
 
     Customer->>Partner: Check gold prices
-    Partner->>JustGold: GET /v1/prices
+    Partner->>JustGold: GET /v1/prices/latest
     JustGold-->>Partner: buyPrice, sellPrice
     Partner->>Partner: Verify response signature
     Partner-->>Customer: Show latest prices
 
     Customer->>Partner: Preview buy request
     Partner->>JustGold: POST /v1/buy/preview
-    JustGold-->>Partner: quoteId
+    JustGold-->>Partner: quoteId, price, quantity, amount, total
     Partner->>Partner: Verify response signature
     Partner-->>Customer: Show buy preview
 
     Customer->>Partner: Confirm buy order
     Partner->>JustGold: POST /v1/buy
-    JustGold-->>Partner: orderId, status
+    JustGold-->>Partner: id, type, metal, quantity, quotedPrice, actualPrice
     Partner->>Partner: Verify response signature
     Partner-->>Customer: Order placed
 ```
@@ -46,20 +46,20 @@ sequenceDiagram
     participant JustGold as JustGold API
 
     Customer->>Partner: Check gold prices
-    Partner->>JustGold: GET /v1/prices
+    Partner->>JustGold: GET /v1/prices/latest
     JustGold-->>Partner: buyPrice, sellPrice
     Partner->>Partner: Verify response signature
     Partner-->>Customer: Show latest prices
 
     Customer->>Partner: Preview sell request
     Partner->>JustGold: POST /v1/sell/preview
-    JustGold-->>Partner: quoteId
+    JustGold-->>Partner: quoteId, price, quantity, amount, total
     Partner->>Partner: Verify response signature
     Partner-->>Customer: Show sell preview
 
     Customer->>Partner: Confirm sell order
     Partner->>JustGold: POST /v1/sell
-    JustGold-->>Partner: orderId, status
+    JustGold-->>Partner: id, type, metal, quantity, quotedPrice, actualPrice
     Partner->>Partner: Verify response signature
     Partner-->>Customer: Order placed
 ```
@@ -70,7 +70,7 @@ Use `POST /v1/customers` to register the customer in JustGold or link your inter
 
 ## 2. Fetch the latest prices
 
-Use `GET /v1/prices` to display the current buy and sell prices before asking the customer to confirm a transaction.
+Use `GET /v1/prices/latest` to display the current buy and sell prices before asking the customer to confirm a transaction.
 
 ## 3. Preview the order
 
@@ -95,8 +95,8 @@ Use the preview response to keep the confirmed order aligned with the quoted val
 Persist the following identifiers in your system:
 
 - JustGold customer ID
-- Preview ID, if returned
-- Buy or sell order ID
+- Quote ID
+- Buy or sell transaction ID
 - Your own internal transaction reference
 
 ## 6. Verify signed responses

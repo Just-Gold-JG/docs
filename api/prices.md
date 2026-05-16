@@ -5,7 +5,7 @@ Returns the latest buy and sell prices for gold and silver.
 ## Endpoint
 
 ```http
-GET /v1/prices
+GET /v1/prices/latest
 ```
 
 ## Authentication
