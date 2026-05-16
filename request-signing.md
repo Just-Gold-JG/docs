@@ -2,6 +2,55 @@
 
 Every request to JustGold must be signed with HMAC-SHA256 using your `client_secret`.
 
+You can integrate in either of these ways:
+
+- implement the signing logic yourself
+- use the official npm package `@justgold/partner-sdk`
+
+## Option 1: Use the partner SDK
+
+### Install
+
+```bash
+npm install @justgold/partner-sdk
+```
+
+### Sign a request
+
+```ts
+import { signRequest } from "@justgold/partner-sdk";
+
+const body = JSON.stringify({
+  amount: "100",
+  metal: "Gold",
+});
+
+const headers = signRequest({
+  method: "POST",
+  path: "/v1/buy/preview",
+  body,
+  clientId: process.env.JUSTGOLD_CLIENT_ID!,
+  secret: process.env.JUSTGOLD_CLIENT_SECRET!,
+});
+```
+
+### Verify a signature
+
+```ts
+import { verifyRequest } from "@justgold/partner-sdk";
+
+const isValid = verifyRequest({
+  method: "POST",
+  path: "/v1/buy/preview",
+  body,
+  secret: process.env.JUSTGOLD_CLIENT_SECRET!,
+  signature: headers["x-signature"],
+  timestamp: headers["x-timestamp"],
+});
+```
+
+## Option 2: Implement signing manually
+
 ## Signature inputs
 
 Build the string to sign with these exact values:
@@ -9,17 +58,20 @@ Build the string to sign with these exact values:
 ```text
 {HTTP_METHOD}
 {REQUEST_PATH}
+{SORTED_QUERY_STRING}
+{BODY_SHA256}
 {TIMESTAMP}
-{RAW_REQUEST_BODY}
 ```
 
 Rules:
 
 - `HTTP_METHOD` must be uppercase, for example `GET` or `POST`.
 - `REQUEST_PATH` must contain only the path, for example `/v1/prices/latest`.
+- `SORTED_QUERY_STRING` must contain query parameters sorted alphabetically by key and joined with `&`. Use an empty string if there are no query parameters.
+- `BODY_SHA256` must be the SHA-256 hex digest of the raw request body.
 - `TIMESTAMP` must match the value sent in `X-Timestamp`.
-- `RAW_REQUEST_BODY` must be the exact JSON string sent over the wire.
-- For requests without a body, use an empty string for `RAW_REQUEST_BODY`.
+- Hash the exact JSON string sent over the wire.
+- For requests without a body, use the SHA-256 of the empty string.
 
 ## Signature algorithm
 
@@ -48,8 +100,9 @@ Content-Type: application/json
 ```text
 POST
 /v1/buy/preview
+
+294b05dc69aebb7c5044fcaa25c1fd1a9651106ec24a54b206074c71b3eb9260
 1767225600
-{"amount":"100","metal":"Gold"}
 ```
 
 ### Node.js example
@@ -59,11 +112,23 @@ import crypto from "node:crypto";
 
 function createSignature({ method, path, timestamp, body, clientSecret }) {
   const rawBody = body ?? "";
+  const query = {};
+  const sortedQuery = Object.entries(query)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, value]) => `${key}=${value}`)
+    .join("&");
+
+  const bodyHash = crypto
+    .createHash("sha256")
+    .update(rawBody, "utf8")
+    .digest("hex");
+
   const stringToSign = [
     method.toUpperCase(),
     path,
+    sortedQuery,
+    bodyHash,
     String(timestamp),
-    rawBody,
   ].join("\n");
 
   return crypto
@@ -95,11 +160,12 @@ console.log({
 
 ## Verification checklist
 
-- Sign the exact JSON payload you send.
-- Do not pretty-print a body after generating the signature.
+- Hash the exact JSON payload you send.
+- Do not pretty-print or mutate a body after generating the signature.
+- Sort query parameters alphabetically before signing.
 - Generate a fresh timestamp for every request.
 - Keep your server time synchronized with NTP.
-- Treat signatures as invalid if either the path or body changes.
+- Treat signatures as invalid if the path, query string, body, or timestamp changes.
 
 ## Response signing
 

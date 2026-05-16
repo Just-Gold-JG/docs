@@ -40,15 +40,7 @@ This endpoint uses the quote returned by the sell preview endpoint.
 
 ```json
 {
-  "id": "682710cc3f1b2c7a9d5e2222",
-  "type": "Sell",
-  "metal": "Silver",
-  "quantity": "10.75268817204301",
-  "currency": "AED",
-  "quotedPrice": "8.93",
-  "actualPrice": "8.93",
-  "baseCurrencyQuotedPrice": "96.032",
-  "baseCurrencyActualPrice": "96.032"
+  "id": "682710cc3f1b2c7a9d5e2222"
 }
 ```
 

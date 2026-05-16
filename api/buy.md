@@ -40,15 +40,7 @@ This endpoint uses the quote returned by the buy preview endpoint.
 
 ```json
 {
-  "id": "682710cc3f1b2c7a9d5e1111",
-  "type": "Buy",
-  "metal": "Gold",
-  "quantity": "0.1794172488147617",
-  "currency": "AED",
-  "quotedPrice": "557.36",
-  "actualPrice": "557.36",
-  "baseCurrencyQuotedPrice": "100",
-  "baseCurrencyActualPrice": "100"
+  "id": "682710cc3f1b2c7a9d5e1111"
 }
 ```
 
