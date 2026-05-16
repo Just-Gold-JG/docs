@@ -44,11 +44,19 @@ Either `amount` or `quantity` must be provided.
 }
 ```
 
+## Sample response
+
+```json
+{
+  "id": "6818744f3f1b2c7a9d5e4321"
+}
+```
+
 ## Responses
 
 | Status | Meaning |
 | --- | --- |
-| `200 OK` | Buy order placed successfully. |
+| `201 Created` | Buy order placed successfully. |
 | `400 Bad Request` | Request payload is invalid or both `amount` and `quantity` are missing. |
 | `429 Too Many Requests` | Rate limit exceeded. Retry later. |
 | `500 Internal Server Error` | An unexpected error occurred on the JustGold side. |
