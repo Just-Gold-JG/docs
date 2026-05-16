@@ -13,6 +13,7 @@ JustGold APIs use standard HTTP response codes.
 | `403` | Client is not allowed to access this resource. |
 | `404` | Resource was not found. |
 | `409` | The request conflicts with the current resource state. |
+| `410` | Price or quote has expired. |
 | `429` | Too many requests. Retry later. |
 | `500` | Internal server error. |
 
