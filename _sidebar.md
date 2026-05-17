@@ -4,6 +4,7 @@
 * [Getting Started](getting-started)
 * [Authentication](authentication)
 * [Request Signing](request-signing)
+* [Webhooks](webhooks)
 * [Integration Flow](integration-flow)
 * API Reference
   * [Customers](api/customers)
