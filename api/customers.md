@@ -108,3 +108,65 @@ Optional fields:
 | `404 Not Found` | Organization was not found. |
 | `429 Too Many Requests` | Rate limit exceeded. Retry later. |
 | `500 Internal Server Error` | An unexpected error occurred on the JustGold side. |
+
+## Get customer holdings
+
+Returns the current gold and silver holdings for a customer.
+
+### Endpoint
+
+```http
+GET /v1/customers/:nationalId/holdings
+```
+
+### Authentication
+
+This endpoint requires:
+
+- `X-Client-Id`
+- `X-Timestamp`
+- `X-Signature`
+
+See [Authentication](../authentication.md) and [Request Signing](../request-signing.md).
+
+### Path parameters
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `nationalId` | string | Yes | Customer national ID. |
+
+### Sample response
+
+```json
+{
+  "currency": "AED",
+  "gold": {
+    "currentQuantity": "0.538001",
+    "avgBuyPrice": "557.6200",
+    "invested": "300.0000",
+    "currentValue": "300.0000",
+    "sellValue": "288.0026",
+    "returns": "0.0000",
+    "pnlPercent": "0.0000"
+  },
+  "silver": {
+    "currentQuantity": "999.000000",
+    "avgBuyPrice": "9.6900",
+    "invested": "9680.3100",
+    "currentValue": "9680.3100",
+    "sellValue": "9290.7000",
+    "returns": "0.0000",
+    "pnlPercent": "0.0000"
+  }
+}
+```
+
+### Responses
+
+| Status | Meaning |
+| --- | --- |
+| `200 OK` | Holdings fetched successfully. |
+| `400 Bad Request` | `nationalId` is missing or invalid. |
+| `404 Not Found` | Customer was not found. |
+| `429 Too Many Requests` | Rate limit exceeded. Retry later. |
+| `500 Internal Server Error` | An unexpected error occurred on the JustGold side. |
