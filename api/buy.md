@@ -26,6 +26,7 @@ This endpoint uses the quote returned by the buy preview endpoint.
 | --- | --- | --- | --- |
 | `quoteId` | string | Yes | Quote identifier returned by the preview endpoint. Must be a UUID. |
 | `customerId` | string | Yes | Customer identifier. |
+| `organizationCode` | string | No | Organization code to attribute the transaction to a specific organization. If omitted, the quote's root organization is used. |
 
 ## Sample request
 
@@ -35,6 +36,12 @@ This endpoint uses the quote returned by the buy preview endpoint.
   "customerId": "6818744f3f1b2c7a9d5e4321"
 }
 ```
+
+## Response body
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | string | Created transaction identifier. |
 
 ## Sample response
 

@@ -15,7 +15,9 @@ This documentation is for partners integrating with JustGold APIs.
 Available endpoints:
 
 - `POST /v1/customers`
+- `GET /v1/customers`
 - `GET /v1/customers/:nationalId/holdings`
+- `GET /v1/customers/:nationalId/vault`
 - `GET /v1/prices/latest`
 - `POST /v1/buy/preview`
 - `POST /v1/sell/preview`
