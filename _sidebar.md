@@ -2,6 +2,7 @@
 
 * [Home](README)
 * [Getting Started](getting-started)
+* [Portal Access](portal-access)
 * [Authentication](authentication)
 * [Request Signing](request-signing)
 * [Webhooks](webhooks)
@@ -12,4 +13,5 @@
   * [Preview](api/preview)
   * [Buy](api/buy)
   * [Sell](api/sell)
+  * [Transactions](api/transactions)
 * [Errors](errors)
