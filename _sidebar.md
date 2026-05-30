@@ -13,6 +13,7 @@
   * [Preview](api/preview)
   * [Buy](api/buy)
   * [Sell](api/sell)
+  * [Products](api/products)
   * [Delivery](api/delivery)
   * [Transactions](api/transactions)
 * [Errors](errors)

@@ -20,6 +20,8 @@ Available endpoints:
 - `GET /v1/customers/:nationalId/holdings`
 - `GET /v1/customers/:nationalId/vault`
 - `GET /v1/prices/latest`
+- `GET /v1/products`
+- `GET /v1/products/:productId`
 - `POST /v1/buy/preview`
 - `POST /v1/sell/preview`
 - `POST /v1/delivery/preview`
