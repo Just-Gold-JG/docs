@@ -2,6 +2,8 @@
 
 Read physical product catalog entries that can be used for delivery transactions.
 
+!> ⚠️ Delivery is only available for UAE partners
+
 ## Authentication
 
 These endpoints require:
