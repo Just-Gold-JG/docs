@@ -22,8 +22,10 @@ Available endpoints:
 - `GET /v1/prices/latest`
 - `POST /v1/buy/preview`
 - `POST /v1/sell/preview`
+- `POST /v1/delivery/preview`
 - `POST /v1/buy`
 - `POST /v1/sell`
+- `POST /v1/delivery`
 - `PATCH /v1/transactions/quote/:quote-id`
 
 ## Start here
