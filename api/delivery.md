@@ -4,7 +4,7 @@ Creates delivery transactions for physical product delivery.
 
 !> ⚠️ Delivery is only available for UAE partners
 
-## Authentication
+### Authentication
 
 These endpoints require:
 
@@ -18,13 +18,13 @@ See [Authentication](../authentication.md) and [Request Signing](../request-sign
 
 Generates a delivery quote before the final transaction is created.
 
-### Endpoint
+#### Endpoint
 
 ```http
 POST /v1/delivery/preview
 ```
 
-### Request body
+#### Request body
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
@@ -41,7 +41,7 @@ POST /v1/delivery/preview
 | `useVault.gold` | boolean | No | Use available gold vault balance for gold items. |
 | `useVault.silver` | boolean | No | Use available silver vault balance for silver items. |
 
-### Sample request
+#### Sample request
 
 ```json
 {
@@ -65,7 +65,7 @@ POST /v1/delivery/preview
 }
 ```
 
-### Response body
+#### Response body
 
 | Field | Type | Description |
 | --- | --- | --- |
@@ -96,7 +96,7 @@ POST /v1/delivery/preview
 
 Only metals present in the cart are included in `metalSummary`.
 
-### Sample response
+#### Sample response
 
 ```json
 {
@@ -134,7 +134,7 @@ Only metals present in the cart are included in `metalSummary`.
 }
 ```
 
-### Responses
+#### Responses
 
 | Status | Meaning |
 | --- | --- |
@@ -150,20 +150,20 @@ Only metals present in the cart are included in `metalSummary`.
 
 Creates a pending delivery transaction using a previously generated delivery quote.
 
-### Endpoint
+#### Endpoint
 
 ```http
 POST /v1/delivery
 ```
 
-### Request body
+#### Request body
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `quoteId` | string | Yes | Quote identifier returned by `POST /v1/delivery/preview`. Must be a UUID. |
 | `customerId` | string | Yes | Customer identifier. |
 
-### Sample request
+#### Sample request
 
 ```json
 {
@@ -172,13 +172,13 @@ POST /v1/delivery
 }
 ```
 
-### Response body
+#### Response body
 
 | Field | Type | Description |
 | --- | --- | --- |
 | `id` | string | Created delivery transaction identifier. |
 
-### Sample response
+#### Sample response
 
 ```json
 {
@@ -186,7 +186,7 @@ POST /v1/delivery
 }
 ```
 
-### Responses
+#### Responses
 
 | Status | Meaning |
 | --- | --- |

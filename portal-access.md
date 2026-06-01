@@ -3,7 +3,7 @@
 B2B partner users can access the JustGold partner portal in two ways:
 
 - Create portal credentials
-- Sign in with OAuth2 / OpenID Connect
+- Sign in with OpenID Connect
 
 Portal access is used to manage organizations, API credentials, users, webhooks, and reports. It is separate from API authentication. API calls still use `X-Client-Id`, `X-Timestamp`, and `X-Signature`.
 
@@ -35,11 +35,11 @@ Use portal credentials when:
 - users should be managed directly in the JustGold portal
 - onboarding needs to be fast and limited to a few users
 
-## OAuth2 / OpenID Connect
+## OpenID Connect
 
 Use this option when partner users should access the portal through the partner's identity provider.
 
-OAuth2 / OpenID Connect allows partner users to sign in with their existing corporate identity. JustGold uses the identity provider to authenticate the user and then grants portal access based on the configured organization and role mapping.
+OpenID Connect allows partner users to sign in with their existing corporate identity. JustGold uses the identity provider to authenticate the user and then grants portal access based on the configured organization and role mapping.
 
 ### How It Works
 
@@ -75,7 +75,7 @@ Share the following details with JustGold when enabling OpenID Connect:
 
 ### When To Use
 
-Use OAuth2 / OpenID Connect when:
+Use OpenID Connect when:
 
 - the partner requires SSO
 - users are managed in a corporate identity provider
@@ -97,5 +97,5 @@ Exact access can vary by partner setup. Confirm the required roles with the Just
 
 - Portal sign-in is not used to authenticate API requests.
 - API credentials are generated and managed inside the portal after the user has portal access.
-- OAuth2 / OpenID Connect must be configured by JustGold before partner users can use it.
+- OpenID Connect must be configured by JustGold before partner users can use it.
 - If a user loses access to the partner identity provider, their portal SSO access should also be removed according to the partner's identity policy.

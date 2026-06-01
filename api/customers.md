@@ -6,13 +6,13 @@ Customer-related endpoints in JustGold.
 
 Creates a new customer account in JustGold.
 
-### Endpoint
+#### Endpoint
 
 ```http
 POST /v1/customers
 ```
 
-### Authentication
+#### Authentication
 
 This endpoint requires:
 
@@ -22,7 +22,7 @@ This endpoint requires:
 
 See [Authentication](../authentication.md) and [Request Signing](../request-signing.md).
 
-### Request body
+#### Request body
 
 Required fields:
 
@@ -60,7 +60,7 @@ Optional fields:
 | `kyc.documentType` | string | No | Document type. |
 | `kyc.documentNumber` | string | No | Document number. |
 
-### Sample request
+#### Sample request
 
 ```json
 {
@@ -87,7 +87,7 @@ Optional fields:
 }
 ```
 
-### Sample response
+#### Sample response
 
 ```json
 {
@@ -95,13 +95,13 @@ Optional fields:
 }
 ```
 
-### Response body
+#### Response body
 
 | Field | Type | Description |
 | --- | --- | --- |
 | `customerId` | string | Created or existing customer identifier. |
 
-### Responses
+#### Responses
 
 | Status | Meaning |
 | --- | --- |
@@ -116,13 +116,13 @@ Optional fields:
 
 Returns the current gold and silver holdings for a customer.
 
-### Endpoint
+#### Endpoint
 
 ```http
 GET /v1/customers/:nationalId/holdings
 ```
 
-### Authentication
+#### Authentication
 
 This endpoint requires:
 
@@ -132,13 +132,13 @@ This endpoint requires:
 
 See [Authentication](../authentication.md) and [Request Signing](../request-signing.md).
 
-### Path parameters
+#### Path parameters
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `nationalId` | string | Yes | Customer national ID. |
 
-### Sample response
+#### Sample response
 
 ```json
 {
@@ -164,7 +164,7 @@ See [Authentication](../authentication.md) and [Request Signing](../request-sign
 }
 ```
 
-### Response body
+#### Response body
 
 | Field | Type | Description |
 | --- | --- | --- |
@@ -179,7 +179,7 @@ See [Authentication](../authentication.md) and [Request Signing](../request-sign
 | `gold.returns`, `silver.returns` | string | Current value minus invested amount. |
 | `gold.pnlPercent`, `silver.pnlPercent` | string | Profit or loss percentage. |
 
-### Responses
+#### Responses
 
 | Status | Meaning |
 | --- | --- |
@@ -190,11 +190,107 @@ See [Authentication](../authentication.md) and [Request Signing](../request-sign
 | `429 Too Many Requests` | Rate limit exceeded. Retry later. |
 | `500 Internal Server Error` | An unexpected error occurred on the JustGold side. |
 
+## Get customer transactions
+
+Returns a paginated list of transactions for a customer.
+
+#### Endpoint
+
+```http
+GET /v1/customers/:nationalId/transactions
+```
+
+#### Authentication
+
+This endpoint requires:
+
+- `X-Client-Id`
+- `X-Timestamp`
+- `X-Signature`
+
+See [Authentication](../authentication.md) and [Request Signing](../request-signing.md).
+
+#### Path parameters
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `nationalId` | string | Yes | Customer national ID. |
+
+#### Query parameters
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `page` | number | No | Page number. Defaults to `1`. |
+| `limit` | number | No | Number of transactions per page. Defaults to `20`. |
+
+#### Sample response
+
+```json
+{
+  "transactions": [
+    {
+      "id": "6a197222858e69b9e0e6d384",
+      "type": "Delivery",
+      "status": "Pending",
+      "quantity": "0",
+      "actualPrice": "0",
+      "baseCurrencyActualPrice": "0",
+      "createdAt": "2026-05-29T11:01:54.986Z"
+    },
+    {
+      "id": "6a1956e9763193901f53112f",
+      "type": "Buy",
+      "status": "Completed",
+      "metal": "Gold",
+      "quantity": "0.26900039453391198307",
+      "actualPrice": "557.62",
+      "baseCurrencyActualPrice": "40.871934604904632153",
+      "createdAt": "2026-05-29T09:05:45.327Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 11,
+    "totalPages": 1
+  }
+}
+```
+
+#### Response body
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `transactions` | array | Customer transactions. |
+| `transactions[].id` | string | Transaction identifier. |
+| `transactions[].type` | string | Transaction type. One of `Buy`, `Sell`, or `Delivery`. |
+| `transactions[].status` | string | Transaction status. One of `Pending`, `Completed`, `Failed`, or `Cancelled`. |
+| `transactions[].metal` | string | `Gold` or `Silver`, when applicable. Delivery transactions may omit this field. |
+| `transactions[].quantity` | string | Transaction quantity. |
+| `transactions[].actualPrice` | string | Actual price per gram. |
+| `transactions[].baseCurrencyActualPrice` | string | Actual transaction value in the base currency. |
+| `transactions[].createdAt` | string | Transaction creation timestamp. |
+| `pagination` | object | Pagination metadata. |
+| `pagination.page` | number | Current page number. |
+| `pagination.limit` | number | Number of transactions per page. |
+| `pagination.total` | number | Total number of matching transactions. |
+| `pagination.totalPages` | number | Total number of pages. |
+
+#### Responses
+
+| Status | Meaning |
+| --- | --- |
+| `200 OK` | Customer transactions fetched successfully. |
+| `400 Bad Request` | `nationalId`, `page`, or `limit` is invalid. |
+| `404 Not Found` | Customer was not found. |
+| `429 Too Many Requests` | Rate limit exceeded. Retry later. |
+| `500 Internal Server Error` | An unexpected error occurred on the JustGold side. |
+
 ## Get customer vault
 
 Returns the customer's vault balances and sellable quantities for gold and silver.
 
-### Endpoint
+#### Endpoint
 
 ```http
 GET /v1/customers/:nationalId/vault
@@ -206,7 +302,7 @@ Example:
 GET /v1/customers/abc-123/vault
 ```
 
-### Authentication
+#### Authentication
 
 This endpoint requires:
 
@@ -216,13 +312,13 @@ This endpoint requires:
 
 See [Authentication](../authentication.md) and [Request Signing](../request-signing.md).
 
-### Path parameters
+#### Path parameters
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `nationalId` | string | Yes | Customer national ID. |
 
-### Sample response
+#### Sample response
 
 ```json
 {
@@ -247,7 +343,7 @@ See [Authentication](../authentication.md) and [Request Signing](../request-sign
 }
 ```
 
-### Response body
+#### Response body
 
 | Field | Type | Description |
 | --- | --- | --- |
@@ -262,7 +358,7 @@ See [Authentication](../authentication.md) and [Request Signing](../request-sign
 | `gold.lockedQuantity`, `silver.lockedQuantity` | string | Quantity still inside the lock-in period. |
 | `gold.sellValue`, `silver.sellValue` | string | Sell value of the quantity available to sell. |
 
-### Responses
+#### Responses
 
 | Status | Meaning |
 | --- | --- |

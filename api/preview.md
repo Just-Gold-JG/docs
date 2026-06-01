@@ -2,7 +2,7 @@
 
 Generates a quote before the final order is placed.
 
-## Authentication
+### Authentication
 
 These endpoints require:
 
@@ -16,13 +16,13 @@ See [Authentication](../authentication.md) and [Request Signing](../request-sign
 
 Generates a buy quote.
 
-### Endpoint
+#### Endpoint
 
 ```http
 POST /v1/buy/preview
 ```
 
-### Request body
+#### Request body
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
@@ -33,7 +33,7 @@ POST /v1/buy/preview
 Provide exactly one of `amount` or `quantity`.
 Both values must be positive when provided.
 
-### Sample request
+#### Sample request
 
 ```json
 {
@@ -42,7 +42,7 @@ Both values must be positive when provided.
 }
 ```
 
-### Response body
+#### Response body
 
 | Field | Type | Description |
 | --- | --- | --- |
@@ -55,7 +55,7 @@ Both values must be positive when provided.
 | `vat` | string | VAT amount. Currently `0`. |
 | `total` | string | Total quoted amount. |
 
-### Sample response
+#### Sample response
 
 ```json
 {
@@ -70,7 +70,7 @@ Both values must be positive when provided.
 }
 ```
 
-### Responses
+#### Responses
 
 | Status | Meaning |
 | --- | --- |
@@ -85,13 +85,13 @@ Both values must be positive when provided.
 
 Generates a sell quote after validating that the customer has enough sellable quantity.
 
-### Endpoint
+#### Endpoint
 
 ```http
 POST /v1/sell/preview
 ```
 
-### Request body
+#### Request body
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
@@ -103,7 +103,7 @@ POST /v1/sell/preview
 Provide exactly one of `amount` or `quantity`.
 Both values must be positive when provided.
 
-### Sample request
+#### Sample request
 
 ```json
 {
@@ -113,7 +113,7 @@ Both values must be positive when provided.
 }
 ```
 
-### Response body
+#### Response body
 
 | Field | Type | Description |
 | --- | --- | --- |
@@ -126,7 +126,7 @@ Both values must be positive when provided.
 | `vat` | string | VAT amount. Currently `0`. |
 | `total` | string | Total quoted amount. |
 
-### Sample response
+#### Sample response
 
 ```json
 {
@@ -141,7 +141,7 @@ Both values must be positive when provided.
 }
 ```
 
-### Responses
+#### Responses
 
 | Status | Meaning |
 | --- | --- |

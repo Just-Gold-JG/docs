@@ -5,7 +5,7 @@ Follow these steps to start your JustGold partner integration.
 ## 1. Get portal access
 
 Obtain access to the JustGold developer portal from your JustGold onboarding contact.
-Partner users can access the portal by creating portal credentials or by using OAuth2 / OpenID Connect SSO.
+Partner users can access the portal by creating portal credentials or by using OpenID Connect SSO.
 
 See [Portal Access](portal-access.md).
 

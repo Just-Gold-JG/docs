@@ -4,7 +4,7 @@ Read physical product catalog entries that can be used for delivery transactions
 
 !> ⚠️ Delivery is only available for UAE partners
 
-## Authentication
+### Authentication
 
 These endpoints require:
 
@@ -18,13 +18,13 @@ See [Authentication](../authentication.md) and [Request Signing](../request-sign
 
 Returns all products, sorted with newest products first.
 
-### Endpoint
+#### Endpoint
 
 ```http
 GET /v1/products
 ```
 
-### Response body
+#### Response body
 
 | Field | Type | Description |
 | --- | --- | --- |
@@ -49,7 +49,7 @@ GET /v1/products
 | `products[].createdAt` | string | Product creation timestamp. |
 | `products[].updatedAt` | string | Product last update timestamp. |
 
-### Sample response
+#### Sample response
 
 ```json
 {
@@ -79,7 +79,7 @@ GET /v1/products
 }
 ```
 
-### Responses
+#### Responses
 
 | Status | Meaning |
 | --- | --- |
@@ -92,19 +92,19 @@ GET /v1/products
 
 Returns one product by identifier.
 
-### Endpoint
+#### Endpoint
 
 ```http
 GET /v1/products/:productId
 ```
 
-### Path parameters
+#### Path parameters
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `productId` | string | Yes | Product identifier. |
 
-### Response body
+#### Response body
 
 | Field | Type | Description |
 | --- | --- | --- |
@@ -128,7 +128,7 @@ GET /v1/products/:productId
 | `createdAt` | string | Product creation timestamp. |
 | `updatedAt` | string | Product last update timestamp. |
 
-### Sample response
+#### Sample response
 
 ```json
 {
@@ -154,7 +154,7 @@ GET /v1/products/:productId
 }
 ```
 
-### Responses
+#### Responses
 
 | Status | Meaning |
 | --- | --- |

@@ -2,13 +2,13 @@
 
 Places a buy order using a previously generated quote.
 
-## Endpoint
+#### Endpoint
 
 ```http
 POST /v1/buy
 ```
 
-## Authentication
+#### Authentication
 
 This endpoint requires:
 
@@ -18,15 +18,15 @@ This endpoint requires:
 
 See [Authentication](../authentication.md) and [Request Signing](../request-signing.md).
 
-## Request body
+#### Request body
 
 This endpoint uses the quote returned by the buy preview endpoint.
 
-## Choosing the initial status
+#### Choosing the initial status
 
 Partners should choose the initial `status` based on when they collect payment from the customer.
 
-### Synchronous payment flow
+#### Synchronous payment flow
 
 Use this flow when customer payment is completed before creating the buy transaction.
 
@@ -44,7 +44,7 @@ sequenceDiagram
     Partner-->>Customer: Buy order completed
 ```
 
-### Asynchronous payment flow
+#### Asynchronous payment flow
 
 Use this flow when the partner creates the buy transaction before the customer payment result is final.
 
@@ -59,15 +59,15 @@ sequenceDiagram
 
     Customer->>Partner: Confirm buy order
     Partner->>JustGold: POST /v1/buy without status or with status = Pending
-    JustGold-->>Partner: Transaction created as Pending
+    JustGold-->>Partner: Transaction created as Pending with transaction id
     Partner->>Payment: Collect payment from customer
     alt Payment succeeds
         Payment-->>Partner: Payment succeeded
-        Partner->>JustGold: PATCH /v1/transactions/quote/:quote-id with status = Completed
+        Partner->>JustGold: PATCH /v1/transactions/:transactionId with status = Completed
         JustGold-->>Partner: Transaction updated to Completed
     else Payment fails
         Payment-->>Partner: Payment failed
-        Partner->>JustGold: PATCH /v1/transactions/quote/:quote-id with status = Failed
+        Partner->>JustGold: PATCH /v1/transactions/:transactionId with status = Failed
         JustGold-->>Partner: Transaction updated to Failed
     end
     Partner-->>Customer: Show final payment and order status
@@ -80,7 +80,7 @@ sequenceDiagram
 | `organizationCode` | string | No | Organization code to attribute the transaction to a specific organization. If omitted, the quote's root organization is used. |
 | `status` | string | No | Initial transaction status. Must be `Pending` or `Completed`. If omitted, the transaction is created as `Pending`. |
 
-## Sample request
+#### Sample request
 
 ```json
 {
@@ -90,13 +90,13 @@ sequenceDiagram
 }
 ```
 
-## Response body
+#### Response body
 
 | Field | Type | Description |
 | --- | --- | --- |
 | `id` | string | Created transaction identifier. |
 
-## Sample response
+#### Sample response
 
 ```json
 {
@@ -104,7 +104,7 @@ sequenceDiagram
 }
 ```
 
-## Responses
+#### Responses
 
 | Status | Meaning |
 | --- | --- |

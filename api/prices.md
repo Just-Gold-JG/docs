@@ -2,13 +2,13 @@
 
 Returns the latest buy and sell prices for gold and silver.
 
-## Endpoint
+### Endpoint
 
 ```http
 GET /v1/prices/latest
 ```
 
-## Authentication
+### Authentication
 
 This endpoint requires:
 
@@ -18,7 +18,7 @@ This endpoint requires:
 
 See [Authentication](../authentication.md) and [Request Signing](../request-signing.md).
 
-## Sample response
+### Sample response
 
 ```json
 {
@@ -27,14 +27,12 @@ See [Authentication](../authentication.md) and [Request Signing](../request-sign
   "sellPrice24K": 535.07,
   "silverPrice": 9.3,
   "sellPriceSilver": 8.93,
-  "spotPrice24K": 548.1,
-  "silverSpotPrice": 9.12,
   "createdAt": "2026-05-21T08:30:00.000Z",
   "updatedAt": "2026-05-21T08:30:00.000Z"
 }
 ```
 
-## Response body
+### Response body
 
 | Field | Type | Description |
 | --- | --- | --- |
@@ -43,12 +41,10 @@ See [Authentication](../authentication.md) and [Request Signing](../request-sign
 | `sellPrice24K` | number | Current sell price per gram for 24K gold. |
 | `silverPrice` | number or null | Current buy price per gram for silver. |
 | `sellPriceSilver` | number or null | Current sell price per gram for silver. |
-| `spotPrice24K` | number or null | Current gold spot price, when available. |
-| `silverSpotPrice` | number or null | Current silver spot price, when available. |
 | `createdAt` | string | ISO timestamp when this price record was created. |
 | `updatedAt` | string | ISO timestamp when this price record was last updated. |
 
-## Responses
+### Responses
 
 | Status | Meaning |
 | --- | --- |

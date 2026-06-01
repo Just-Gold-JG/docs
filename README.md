@@ -4,7 +4,7 @@ This documentation is for partners integrating with JustGold APIs.
 
 ## What you can do
 
-- Access the partner portal with credentials or OAuth2 / OpenID Connect
+- Access the partner portal with credentials or OpenID Connect
 - Create and map customers
 - Fetch live prices
 - Preview buy and sell orders
@@ -19,6 +19,7 @@ Available endpoints:
 - `GET /v1/customers`
 - `GET /v1/customers/:nationalId/holdings`
 - `GET /v1/customers/:nationalId/vault`
+- `GET /v1/customers/:nationalId/transactions`
 - `GET /v1/prices/latest`
 - `GET /v1/products`
 - `GET /v1/products/:productId`
@@ -28,7 +29,7 @@ Available endpoints:
 - `POST /v1/buy`
 - `POST /v1/sell`
 - `POST /v1/delivery`
-- `PATCH /v1/transactions/quote/:quote-id`
+- `PATCH /v1/transactions/:transactionId`
 
 ## Start here
 

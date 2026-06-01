@@ -2,13 +2,13 @@
 
 Places a sell order using a previously generated quote.
 
-## Endpoint
+#### Endpoint
 
 ```http
 POST /v1/sell
 ```
 
-## Authentication
+#### Authentication
 
 This endpoint requires:
 
@@ -18,7 +18,7 @@ This endpoint requires:
 
 See [Authentication](../authentication.md) and [Request Signing](../request-signing.md).
 
-## Request body
+#### Request body
 
 This endpoint uses the quote returned by the sell preview endpoint.
 
@@ -28,7 +28,7 @@ This endpoint uses the quote returned by the sell preview endpoint.
 | `customerId` | string | Yes | Customer identifier. |
 | `organizationCode` | string | No | Organization code to attribute the transaction to a specific organization. If omitted, the quote's root organization is used. |
 
-## Sample request
+#### Sample request
 
 ```json
 {
@@ -37,13 +37,13 @@ This endpoint uses the quote returned by the sell preview endpoint.
 }
 ```
 
-## Response body
+#### Response body
 
 | Field | Type | Description |
 | --- | --- | --- |
 | `id` | string | Created transaction identifier. |
 
-## Sample response
+#### Sample response
 
 ```json
 {
@@ -51,7 +51,7 @@ This endpoint uses the quote returned by the sell preview endpoint.
 }
 ```
 
-## Responses
+#### Responses
 
 | Status | Meaning |
 | --- | --- |
