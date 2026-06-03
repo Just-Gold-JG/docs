@@ -1,40 +1,28 @@
-# JustGold B2B Partner Docs
+# JustGold Partner Docs
 
-This documentation is for partners integrating with JustGold APIs.
+Build digital gold experiences with JustGold using the integration path that fits your product.
 
-## What you can do
+## Choose your path
 
-- Access the partner portal with credentials or OpenID Connect
-- Create and map customers
-- Fetch live prices
-- Preview buy and sell orders
-- Place buy and sell transactions
-- Secure every request with HMAC
+| Method | Best for | You build | JustGold provides |
+| --- | --- | --- | --- |
+| [API integration](api/overview.md) | Backend-led products, custom checkout, server-side orchestration | Customer mapping, order screens, payment flow, request signing, webhooks | REST APIs for customers, prices, previews, buy, sell, delivery, and transactions |
+| [SDK integration](sdk/overview.md) | Mobile apps that need a faster embedded integration | App entry points, user session handoff, native app handling | Mobile SDK flows for React Native and Flutter |
 
-## API summary
+## Core capabilities
 
-Available endpoints:
+- Create and map partner customers
+- Fetch live buy and sell prices
+- Preview buy, sell, and delivery orders before confirmation
+- Place buy, sell, and delivery transactions
+- Track transaction status
+- Receive webhooks for asynchronous updates
+- Secure server requests with HMAC request signing
 
-- `POST /v1/customers`
-- `GET /v1/customers`
-- `GET /v1/customers/:nationalId/holdings`
-- `GET /v1/customers/:nationalId/vault`
-- `GET /v1/customers/:nationalId/transactions`
-- `GET /v1/prices/latest`
-- `GET /v1/products`
-- `GET /v1/products/:productId`
-- `POST /v1/buy/preview`
-- `POST /v1/sell/preview`
-- `POST /v1/delivery/preview`
-- `POST /v1/buy`
-- `POST /v1/sell`
-- `POST /v1/delivery`
-- `PATCH /v1/transactions/:transactionId`
+## Recommended reading order
 
-## Start here
-
-1. Read [Getting Started](getting-started.md)
-2. Review [Portal Access](portal-access.md)
-3. Configure [Authentication](authentication.md)
-4. Implement [Request Signing](request-signing.md)
+1. Start with [Getting Started](getting-started.md)
+2. Pick [API integration](api/overview.md) or [SDK integration](sdk/overview.md)
+3. Review [Portal Access](portal-access.md) and [Authentication](authentication.md)
+4. For API builds, implement [Request Signing](request-signing.md)
 5. Follow the [Integration Flow](integration-flow.md)

@@ -7,7 +7,8 @@
 * [Request Signing](request-signing)
 * [Webhooks](webhooks)
 * [Integration Flow](integration-flow)
-* API Reference
+* API Integration
+  * [Overview](api/overview)
   * [Customers](api/customers)
   * [Prices](api/prices)
   * [Preview](api/preview)
@@ -16,4 +17,8 @@
   * [Products](api/products)
   * [Delivery](api/delivery)
   * [Transactions](api/transactions)
+* SDK Integration
+  * [Overview](sdk/overview)
+  * [React Native](sdk/react-native)
+  * [Flutter](sdk/flutter)
 * [Errors](errors)

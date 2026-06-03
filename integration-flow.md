@@ -1,6 +1,38 @@
 # Integration Flow
 
-This is the recommended partner integration sequence.
+This page shows the recommended JustGold flow for each integration method.
+
+## Pick the right flow
+
+| Method | Flow |
+| --- | --- |
+| [API integration](api/overview.md) | Your backend calls JustGold APIs directly and your product owns the customer screens |
+| [SDK integration](sdk/overview.md) | Your app launches the JustGold SDK using a short-lived session from your backend |
+
+## SDK flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Customer
+    participant App as Partner App
+    participant Backend as Partner Backend
+    participant SDK as JustGold SDK
+    participant JustGold as JustGold
+
+    Customer->>App: Open gold experience
+    App->>Backend: Request SDK session
+    Backend->>JustGold: Create or map customer
+    Backend->>JustGold: Create SDK session
+    JustGold-->>Backend: Session token
+    Backend-->>App: SDK launch payload
+    App->>SDK: Launch JustGold flow
+    SDK->>JustGold: Complete buy, sell, delivery, or portfolio action
+    SDK-->>App: Completed, cancelled, or error result
+    JustGold-->>Backend: Webhook update
+```
+
+For platform-specific setup, see [React Native SDK Integration](sdk/react-native.md) or [Flutter SDK Integration](sdk/flutter.md).
 
 ## Buy flow
 
