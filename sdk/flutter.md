@@ -79,7 +79,16 @@ Future<void> openGoldExperience() async {
 | `cancelled` | Close the SDK flow and keep the user in the gold area |
 | `error` | Show a retry action and record the SDK error code |
 
-## 6. Production checklist
+## 6. Handle SDK events
+
+The SDK can emit events to the host app during a flow.
+
+| Event | When it fires | Host app action |
+| --- | --- | --- |
+| `sessionExpired` | The short-lived SDK session is no longer valid. | Request a new SDK session from your backend and reinitialize the SDK. |
+| `paymentRequested` | The customer confirms a buy or delivery quote and payment must be completed outside the SDK. | Start the Flutter payment flow, then return the customer to the SDK status screen after payment is processed. |
+
+## 7. Production checklist
 
 - Switch from sandbox to production environment values
 - Confirm Android package ID and iOS bundle ID

@@ -6,7 +6,7 @@
 * [Authentication](authentication)
 * [Request Signing](request-signing)
 * [Webhooks](webhooks)
-* [Integration Flow](integration-flow)
+* [Integration](integration)
 * API Integration
   * [Overview](api/overview)
   * [Customers](api/customers)

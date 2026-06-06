@@ -81,7 +81,16 @@ Handle these states in your app:
 | `cancelled` | Return the customer to the previous screen without creating an error state |
 | `error` | Show a retry path and log the SDK error code |
 
-## 6. Production checklist
+## 6. Handle SDK events
+
+The SDK can emit events to the host app during a flow.
+
+| Event | When it fires | Host app action |
+| --- | --- | --- |
+| `sessionExpired` | The short-lived SDK session is no longer valid. | Request a new SDK session from your backend and reinitialize the SDK. |
+| `paymentRequested` | The customer confirms a buy or delivery quote and payment must be completed outside the SDK. | Start the React Native payment flow, then return the customer to the SDK status screen after payment is processed. |
+
+## 7. Production checklist
 
 - Use production environment values
 - Confirm app signing and bundle identifiers with JustGold
