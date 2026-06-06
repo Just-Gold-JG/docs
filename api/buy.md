@@ -30,48 +30,9 @@ Partners should choose the initial `status` based on when they collect payment f
 
 Use this flow when customer payment is completed before creating the buy transaction.
 
-```mermaid
-%%{init: { "sequence": { "mirrorActors": false } }}%%
-sequenceDiagram
-    autonumber
-    actor Customer
-    participant Partner as Partner Platform
-    participant JustGold as JustGold API
-
-    Customer->>Partner: Confirm buy and complete payment
-    Partner->>JustGold: POST /v1/buy with status = Completed
-    JustGold-->>Partner: Transaction created as Completed
-    Partner-->>Customer: Buy order completed
-```
-
 #### Asynchronous payment flow
 
 Use this flow when the partner creates the buy transaction before the customer payment result is final.
-
-```mermaid
-%%{init: { "sequence": { "mirrorActors": false } }}%%
-sequenceDiagram
-    autonumber
-    actor Customer
-    participant Partner as Partner Platform
-    participant Payment as Payment Provider
-    participant JustGold as JustGold API
-
-    Customer->>Partner: Confirm buy order
-    Partner->>JustGold: POST /v1/buy without status or with status = Pending
-    JustGold-->>Partner: Transaction created as Pending with transaction id
-    Partner->>Payment: Collect payment from customer
-    alt Payment succeeds
-        Payment-->>Partner: Payment succeeded
-        Partner->>JustGold: PATCH /v1/transactions/:transactionId with status = Completed
-        JustGold-->>Partner: Transaction updated to Completed
-    else Payment fails
-        Payment-->>Partner: Payment failed
-        Partner->>JustGold: PATCH /v1/transactions/:transactionId with status = Failed
-        JustGold-->>Partner: Transaction updated to Failed
-    end
-    Partner-->>Customer: Show final payment and order status
-```
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
