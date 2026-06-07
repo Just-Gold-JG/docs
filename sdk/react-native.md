@@ -101,6 +101,6 @@ The SDK can emit events to the host app during a flow.
 
 ## Related docs
 
-- [SDK Overview](overview.md)
+- [SDK Overview](sdk/overview.md)
 - [Portal Access](../portal-access.md)
 - [Webhooks](../webhooks.md)

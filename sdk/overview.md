@@ -193,4 +193,4 @@ Confirm these items with your JustGold onboarding contact:
 
 ## Next step
 
-Choose your platform guide: [React Native](react-native.md) or [Flutter](flutter.md).
+Choose your platform guide: [React Native](sdk/react-native.md) or [Flutter](sdk/flutter.md).
