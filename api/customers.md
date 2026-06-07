@@ -26,7 +26,7 @@ See [Authentication](../authentication.md) and [Request Signing](../request-sign
 
 Required fields:
 
-- `nationalId`
+- `identifier`
 - `idType`
 - `country`
 - `firstName`
@@ -41,8 +41,8 @@ Optional fields:
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `nationalId` | string | Yes | Customer national ID. |
-| `idType` | string | Yes | Type of identification document. |
+| `identifier` | string | Yes | Customer identifier. Can be a national ID, a unique ID from the partner's system, etc. |
+| `idType` | string | Yes | Type of identifier. One of `Custom`, `EmiratesId`, `Passport`, etc. |
 | `country` | string | Yes | Two-letter uppercase country code. |
 | `firstName` | string | Yes | Customer first name. |
 | `lastName` | string | Yes | Customer last name. |
@@ -64,7 +64,7 @@ Optional fields:
 
 ```json
 {
-  "nationalId": "784198765432109",
+  "identifier": "784198765432109",
   "idType": "EmiratesId",
   "country": "AE",
   "firstName": "Aarav",
@@ -119,7 +119,7 @@ Returns the current gold and silver holdings for a customer.
 #### Endpoint
 
 ```http
-GET /v1/customers/:nationalId/holdings
+GET /v1/customers/:identifier/holdings
 ```
 
 #### Authentication
@@ -136,7 +136,7 @@ See [Authentication](../authentication.md) and [Request Signing](../request-sign
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `nationalId` | string | Yes | Customer national ID. |
+| `identifier` | string | Yes | Customer identifier. Can be a national ID, a unique ID from the partner's system, etc. |
 
 #### Sample response
 
@@ -184,7 +184,7 @@ See [Authentication](../authentication.md) and [Request Signing](../request-sign
 | Status | Meaning |
 | --- | --- |
 | `200 OK` | Holdings fetched successfully. |
-| `400 Bad Request` | `nationalId` is missing or invalid. |
+| `400 Bad Request` | `identifier` is missing or invalid. |
 | `404 Not Found` | Customer was not found. |
 | `503 Service Unavailable` | Price data is not available. |
 | `429 Too Many Requests` | Rate limit exceeded. Retry later. |
@@ -197,7 +197,7 @@ Returns a paginated list of transactions for a customer.
 #### Endpoint
 
 ```http
-GET /v1/customers/:nationalId/transactions
+GET /v1/customers/:identifier/transactions
 ```
 
 #### Authentication
@@ -214,7 +214,7 @@ See [Authentication](../authentication.md) and [Request Signing](../request-sign
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `nationalId` | string | Yes | Customer national ID. |
+| `identifier` | string | Yes | Customer identifier. Can be a national ID, a unique ID from the partner's system, etc. |
 
 #### Query parameters
 
@@ -281,7 +281,7 @@ See [Authentication](../authentication.md) and [Request Signing](../request-sign
 | Status | Meaning |
 | --- | --- |
 | `200 OK` | Customer transactions fetched successfully. |
-| `400 Bad Request` | `nationalId`, `page`, or `limit` is invalid. |
+| `400 Bad Request` | `identifier`, `page`, or `limit` is invalid. |
 | `404 Not Found` | Customer was not found. |
 | `429 Too Many Requests` | Rate limit exceeded. Retry later. |
 | `500 Internal Server Error` | An unexpected error occurred on the JustGold side. |
@@ -293,7 +293,7 @@ Returns the customer's vault balances and sellable quantities for gold and silve
 #### Endpoint
 
 ```http
-GET /v1/customers/:nationalId/vault
+GET /v1/customers/:identifier/vault
 ```
 
 Example:
@@ -316,7 +316,7 @@ See [Authentication](../authentication.md) and [Request Signing](../request-sign
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `nationalId` | string | Yes | Customer national ID. |
+| `identifier` | string | Yes | Customer identifier. Can be a national ID, a unique ID from the partner's system, etc. |
 
 #### Sample response
 
@@ -363,7 +363,7 @@ See [Authentication](../authentication.md) and [Request Signing](../request-sign
 | Status | Meaning |
 | --- | --- |
 | `200 OK` | Vault balances fetched successfully. |
-| `400 Bad Request` | `nationalId` is missing or invalid. |
+| `400 Bad Request` | `identifier` is missing or invalid. |
 | `404 Not Found` | Customer was not found. |
 | `503 Service Unavailable` | Price data is not available. |
 | `429 Too Many Requests` | Rate limit exceeded. Retry later. |

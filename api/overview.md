@@ -175,7 +175,7 @@ sequenceDiagram
 
 | Area | Endpoints |
 | --- | --- |
-| Customers | `POST /v1/customers`, `GET /v1/customers`, `GET /v1/customers/:nationalId/holdings`, `GET /v1/customers/:nationalId/vault`, `GET /v1/customers/:nationalId/transactions` |
+| Customers | `POST /v1/customers`, `GET /v1/customers`, `GET /v1/customers/:identifier/holdings`, `GET /v1/customers/:identifier/vault`, `GET /v1/customers/:identifier/transactions` |
 | Prices | `GET /v1/prices/latest` |
 | Products | `GET /v1/products`, `GET /v1/products/:productId` |
 | Preview | `POST /v1/buy/preview`, `POST /v1/sell/preview`, `POST /v1/delivery/preview` |
