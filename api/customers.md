@@ -286,6 +286,246 @@ See [Authentication](../authentication.md) and [Request Signing](../request-sign
 | `429 Too Many Requests` | Rate limit exceeded. Retry later. |
 | `500 Internal Server Error` | An unexpected error occurred on the JustGold side. |
 
+## Get customer cart
+
+Returns the customer's cart with full product details and quantities.
+
+#### Endpoint
+
+```http
+GET /v1/customers/:identifier/cart
+```
+
+#### Authentication
+
+This endpoint requires:
+
+- `X-Client-Id`
+- `X-Timestamp`
+- `X-Signature`
+
+See [Authentication](../authentication.md) and [Request Signing](../request-signing.md).
+
+#### Path parameters
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `identifier` | string | Yes | Customer identifier. Can be a national ID, a unique ID from the partner's system, etc. |
+
+#### Sample response
+
+```json
+{
+  "items": [
+    {
+      "id": "682710cc3f1b2c7a9d5e3333",
+      "metal": "Gold",
+      "country": "AE",
+      "name": "Gold Bar 1g",
+      "brand": "JustGold",
+      "image": "gold-bar-1g.png",
+      "imageUrl": "https://cdn.example.com/products/images/gold-bar-1g.png",
+      "inStock": true,
+      "weight": 1,
+      "units": "Gram",
+      "purity": "999.9",
+      "description": "1 gram gold bar",
+      "type": "Bar",
+      "serviceCharge": 5,
+      "serviceChargeType": "Fixed",
+      "mintingCharge": 15,
+      "mintingChargeType": "Fixed",
+      "createdAt": "2026-05-30T08:15:30.000Z",
+      "updatedAt": "2026-05-30T08:15:30.000Z",
+      "quantity": 2
+    }
+  ]
+}
+```
+
+#### Response body
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `items` | array | Cart items, each combining product details with the cart quantity. |
+| `items[].id` | string | Product identifier. |
+| `items[].metal` | string | `Gold` or `Silver`. |
+| `items[].country` | string | Product country code. |
+| `items[].name` | string | Product display name. |
+| `items[].brand` | string | Product brand, when available. |
+| `items[].image` | string | Product image file name, when available. |
+| `items[].imageUrl` | string | Full product image URL, when available. |
+| `items[].inStock` | boolean | Whether the product is currently in stock. |
+| `items[].weight` | number | Product metal weight. |
+| `items[].units` | string | Weight unit. Allowed values: `Gram`, `Kg`, `Ounce`, `Pound`. |
+| `items[].purity` | string | Product purity. |
+| `items[].description` | string | Product description, when available. |
+| `items[].type` | string | Product type. Allowed values: `Bar`, `Coin`, `Jewellery`, `Other`. |
+| `items[].serviceCharge` | number | Service charge value. |
+| `items[].serviceChargeType` | string | `Fixed` or `Percent`. |
+| `items[].mintingCharge` | number | Minting charge value. |
+| `items[].mintingChargeType` | string | `Fixed` or `Percent`. |
+| `items[].createdAt` | string | Product creation timestamp. |
+| `items[].updatedAt` | string | Product last update timestamp. |
+| `items[].quantity` | number | Quantity of this product in the cart. |
+
+#### Responses
+
+| Status | Meaning |
+| --- | --- |
+| `200 OK` | Cart fetched successfully. |
+| `400 Bad Request` | `identifier` is missing or invalid. |
+| `404 Not Found` | Customer was not found. |
+| `429 Too Many Requests` | Rate limit exceeded. Retry later. |
+| `500 Internal Server Error` | An unexpected error occurred on the JustGold side. |
+
+## Update customer cart
+
+Adds, updates, or removes a product in the customer's cart, and returns the resulting cart.
+
+#### Endpoint
+
+```http
+PUT /v1/customers/:identifier/cart
+```
+
+#### Authentication
+
+This endpoint requires:
+
+- `X-Client-Id`
+- `X-Timestamp`
+- `X-Signature`
+
+See [Authentication](../authentication.md) and [Request Signing](../request-signing.md).
+
+#### Path parameters
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `identifier` | string | Yes | Customer identifier. Can be a national ID, a unique ID from the partner's system, etc. |
+
+#### Request body
+
+Required fields:
+
+- `productId`
+- `quantity`
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `productId` | string | Yes | Identifier of the product to add, update, or remove. |
+| `quantity` | number | Yes | Desired quantity for the product. Integer, `0` or greater. Setting it to `0` removes the product from the cart. Setting it for an existing product replaces (does not increment) its quantity. |
+
+#### Sample request
+
+```json
+{
+  "productId": "682710cc3f1b2c7a9d5e3333",
+  "quantity": 2
+}
+```
+
+#### Sample response
+
+```json
+{
+  "items": [
+    {
+      "id": "682710cc3f1b2c7a9d5e3333",
+      "metal": "Gold",
+      "country": "AE",
+      "name": "Gold Bar 1g",
+      "brand": "JustGold",
+      "image": "gold-bar-1g.png",
+      "imageUrl": "https://cdn.example.com/products/images/gold-bar-1g.png",
+      "inStock": true,
+      "weight": 1,
+      "units": "Gram",
+      "purity": "999.9",
+      "description": "1 gram gold bar",
+      "type": "Bar",
+      "serviceCharge": 5,
+      "serviceChargeType": "Fixed",
+      "mintingCharge": 15,
+      "mintingChargeType": "Fixed",
+      "createdAt": "2026-05-30T08:15:30.000Z",
+      "updatedAt": "2026-05-30T08:15:30.000Z",
+      "quantity": 2
+    }
+  ]
+}
+```
+
+#### Response body
+
+Same shape as [Get customer cart](#get-customer-cart):
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `items` | array | Cart items, each combining product details with the cart quantity, after applying the update. |
+
+#### Responses
+
+| Status | Meaning |
+| --- | --- |
+| `200 OK` | Cart updated and returned successfully. |
+| `400 Bad Request` | `identifier` is missing, or `productId`/`quantity` is missing or invalid. |
+| `404 Not Found` | Customer or product was not found. |
+| `429 Too Many Requests` | Rate limit exceeded. Retry later. |
+| `500 Internal Server Error` | An unexpected error occurred on the JustGold side. |
+
+## Get customer token
+
+Issues a short-lived token for a customer, used to initialize the SDK on their behalf.
+
+#### Endpoint
+
+```http
+POST /v1/customers/:identifier/token
+```
+
+#### Authentication
+
+This endpoint requires:
+
+- `X-Client-Id`
+- `X-Timestamp`
+- `X-Signature`
+
+See [Authentication](../authentication.md) and [Request Signing](../request-signing.md).
+
+#### Path parameters
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `identifier` | string | Yes | Customer identifier. Can be a national ID, a unique ID from the partner's system, etc. |
+
+#### Sample response
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjdXN0b21lcklkIjoiNjgxODc0NGYzZjFiMmM3YTlkNWU0MzIxIiwiaWRlbnRpZmllciI6Ijc4NDE5ODc2NTQzMjEwOSIsIm9yZ2FuaXphdGlvbklkIjoiNjgxODc0NGYzZjFiMmM3YTlkNWUwMDAxIn0.signature"
+}
+```
+
+#### Response body
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `token` | string | Short-lived JWT (valid for 10 minutes) identifying the customer. Use it to initialize the SDK. |
+
+#### Responses
+
+| Status | Meaning |
+| --- | --- |
+| `200 OK` | Token issued successfully. |
+| `400 Bad Request` | `identifier` is missing or invalid. |
+| `403 Forbidden` | Customer does not belong to the requesting organization. |
+| `404 Not Found` | Customer was not found. |
+| `429 Too Many Requests` | Rate limit exceeded. Retry later. |
+| `500 Internal Server Error` | An unexpected error occurred on the JustGold side. |
+
 ## Get customer vault
 
 Returns the customer's vault balances and sellable quantities for gold and silver.
