@@ -6,6 +6,8 @@ Customer-related endpoints in JustGold.
 
 Creates a new customer account in JustGold.
 
+This endpoint is **idempotent**: calling it again with the same `identifier` does not create a duplicate customer. Instead, the existing customer's `customerId` is returned (see [Responses](#responses)).
+
 #### Endpoint
 
 ```http
@@ -22,39 +24,26 @@ This endpoint requires:
 
 See [Authentication](../authentication.md) and [Request Signing](../request-signing.md).
 
+The organization is determined from `X-Client-Id` and does not need to be sent in the request body.
+
 #### Request body
-
-Required fields:
-
-- `identifier`
-- `idType`
-- `country`
-- `firstName`
-- `lastName`
-- `gender`
-
-Optional fields:
-
-- `email`
-- `phone`
-- `kyc`
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `identifier` | string | Yes | Customer identifier. Can be a national ID, a unique ID from the partner's system, etc. |
-| `idType` | string | Yes | Type of identifier. One of `Custom`, `EmiratesId`, `Passport`, etc. |
-| `country` | string | Yes | Two-letter uppercase country code. |
-| `firstName` | string | Yes | Customer first name. |
-| `lastName` | string | Yes | Customer last name. |
-| `gender` | string | Yes | Allowed values: `Male`, `Female`, `Others`. |
+| `idType` | string | No | Type of identifier. One of `Custom`, `EmiratesId`, `Passport`, etc. Defaults to `Custom` if omitted. |
+| `country` | string | No | Two-letter uppercase country code. |
+| `firstName` | string | No | Customer first name. |
+| `lastName` | string | No | Customer last name. |
+| `gender` | string | No | Allowed values: `Male`, `Female`, `Others`. |
 | `email` | string | No | Customer email address. |
 | `phone` | object | No | Customer phone details. |
 | `phone.countryCode` | string | No | Phone country code. |
 | `phone.number` | string | No | Phone number without country code. |
 | `kyc` | object | No | KYC details for the customer. |
-| `kyc.kycId` | string | No | KYC record identifier. |
-| `kyc.kycStatus` | string | No | KYC status. |
-| `kyc.issuingAuthority` | string | No | Authority that issued the document. |
+| `kyc.kycId` | string | Yes, if `kyc` is provided | KYC record identifier. |
+| `kyc.kycStatus` | string | Yes, if `kyc` is provided | KYC status. |
+| `kyc.issuingAuthority` | string | Yes, if `kyc` is provided | Authority that issued the document. |
 | `kyc.issuedAt` | string | No | ISO date when the document was issued. |
 | `kyc.expiresAt` | string | No | ISO date when the document expires. |
 | `kyc.documentType` | string | No | Document type. |
@@ -91,7 +80,8 @@ Optional fields:
 
 ```json
 {
-  "customerId": "6818744f3f1b2c7a9d5e4321"
+  "customerId": "6818744f3f1b2c7a9d5e4321",
+  "identifier": "784198765432109"
 }
 ```
 
@@ -99,14 +89,15 @@ Optional fields:
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `customerId` | string | Created or existing customer identifier. |
+| `customerId` | string | Created or existing customer's internal identifier. |
+| `identifier` | string | The customer identifier as originally provided in the request (without the partner's organization prefix). |
 
 #### Responses
 
 | Status | Meaning |
 | --- | --- |
 | `201 Created` | Customer account created successfully. |
-| `200 OK` | Customer already exists and the existing `customerId` is returned. |
+| `200 OK` | A customer with this `identifier` already exists for the organization. No new customer is created; the existing `customerId` is returned. Safe to retry. |
 | `400 Bad Request` | Request payload is invalid or required fields are missing. |
 | `404 Not Found` | Organization was not found. |
 | `429 Too Many Requests` | Rate limit exceeded. Retry later. |

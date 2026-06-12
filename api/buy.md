@@ -1,16 +1,10 @@
 # Buy
 
-Places a buy order using a previously generated quote.
+Generates a buy quote and places a buy order using a previously generated quote.
 
-#### Endpoint
+### Authentication
 
-```http
-POST /v1/buy
-```
-
-#### Authentication
-
-This endpoint requires:
+These endpoints require:
 
 - `X-Client-Id`
 - `X-Timestamp`
@@ -18,9 +12,88 @@ This endpoint requires:
 
 See [Authentication](../authentication.md) and [Request Signing](../request-signing.md).
 
+## Buy preview
+
+Generates a buy quote.
+
+#### Endpoint
+
+```http
+POST /v1/buy/preview
+```
+
 #### Request body
 
-This endpoint uses the quote returned by the buy preview endpoint.
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `metal` | string | Yes | Allowed values: `Gold`, `Silver`. |
+| `amount` | string | Conditional | Numeric string. Required if `quantity` is not provided. |
+| `quantity` | string | Conditional | Numeric string. Required if `amount` is not provided. |
+| `customerIdentifier` | string | Yes | Partner-scoped customer identifier. If no customer exists with this identifier, one is created automatically. |
+
+Provide exactly one of `amount` or `quantity`.
+Both values must be positive when provided.
+
+#### Sample request
+
+```json
+{
+  "amount": "100",
+  "metal": "Gold",
+  "customerIdentifier": "cust-10293"
+}
+```
+
+#### Response body
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `quoteId` | string | Quote identifier to pass to `POST /v1/buy`. |
+| `metal` | string | `Gold` or `Silver`. |
+| `currency` | string | Organization currency used for the quote. |
+| `price` | string | Buy price per gram. |
+| `quantity` | string | Quoted metal quantity in grams. |
+| `amount` | string | Quoted pre-VAT amount. |
+| `vat` | string | VAT amount. Currently `0`. |
+| `total` | string | Total quoted amount. |
+| `expiresAt` | string | ISO 8601 timestamp (UTC) indicating when this quote expires. |
+
+#### Sample response
+
+```json
+{
+  "quoteId": "aa1c4362-7b9c-4f48-8a2b-4d4bc3e19412",
+  "metal": "Gold",
+  "currency": "AED",
+  "price": "557.36",
+  "quantity": "0.1794172488147617",
+  "amount": "100",
+  "vat": "0",
+  "total": "100",
+  "expiresAt": "2026-06-12T10:15:00.000Z"
+}
+```
+
+#### Responses
+
+| Status | Meaning |
+| --- | --- |
+| `200 OK` | Quote generated successfully. |
+| `400 Bad Request` | Request payload is invalid, both `amount` and `quantity` are missing, or both are provided. |
+| `401 Unauthorized` | Organization context was not found for the authenticated partner. |
+| `404 Not Found` | Organization was not found. |
+| `429 Too Many Requests` | Rate limit exceeded. Retry later. |
+| `500 Internal Server Error` | An unexpected error occurred on the JustGold side. |
+
+## Place buy order
+
+Places a buy order using a previously generated quote.
+
+#### Endpoint
+
+```http
+POST /v1/buy
+```
 
 #### Choosing the initial status
 
@@ -36,18 +109,21 @@ Use this flow when the partner creates the buy transaction before the customer p
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `quoteId` | string | Yes | Quote identifier returned by the preview endpoint. Must be a UUID. |
-| `customerId` | string | Yes | Customer identifier. |
-| `organizationCode` | string | No | Organization code to attribute the transaction to a specific organization. If omitted, the quote's root organization is used. |
-| `status` | string | No | Initial transaction status. Must be `Pending` or `Completed`. If omitted, the transaction is created as `Pending`. |
+| `quoteId` | string | Yes | Quote identifier returned by the buy preview endpoint. Must be a UUID. |
+| `status` | string | No | Initial transaction status. One of `Pending`, `Completed`, `Failed`, `Cancelled`. Defaults to `Pending`. |
+| `paymentReference` | string | No | Reference identifier for the customer's payment (e.g. payment gateway transaction ID). |
+| `subOrgCode` | string | No | Sub-organization code to attribute the transaction to, if your organization has sub-organizations. If omitted, the quote's root organization is used. |
+
+The customer is the one identified by `customerIdentifier` during the buy preview request — there is no need to pass a customer identifier again.
 
 #### Sample request
 
 ```json
 {
   "quoteId": "aa1c4362-7b9c-4f48-8a2b-4d4bc3e19412",
-  "customerId": "6818744f3f1b2c7a9d5e4321",
-  "status": "Completed"
+  "status": "Completed",
+  "paymentReference": "pay_3f8a9c1b2d",
+  "subOrgCode": "BR-DXB-01"
 }
 ```
 
@@ -56,12 +132,24 @@ Use this flow when the partner creates the buy transaction before the customer p
 | Field | Type | Description |
 | --- | --- | --- |
 | `id` | string | Created transaction identifier. |
+| `type` | string | Transaction type. Always `Buy`. |
+| `metal` | string | `Gold` or `Silver`. |
+| `quantity` | string | Metal quantity purchased, in grams. |
+| `currency` | string | Organization currency used for the transaction. |
+| `quotedPrice` | string | Price per gram from the quote at the time it was generated. |
+| `status` | string | Transaction status, e.g. `Pending` or `Completed`. |
 
 #### Sample response
 
 ```json
 {
-  "id": "682710cc3f1b2c7a9d5e1111"
+  "id": "682710cc3f1b2c7a9d5e1111",
+  "type": "Buy",
+  "metal": "Gold",
+  "quantity": "0.1794172488147617",
+  "currency": "AED",
+  "quotedPrice": "557.36",
+  "status": "Completed"
 }
 ```
 
@@ -70,9 +158,9 @@ Use this flow when the partner creates the buy transaction before the customer p
 | Status | Meaning |
 | --- | --- |
 | `201 Created` | Buy order placed successfully. |
-| `400 Bad Request` | Request payload is invalid, `quoteId` is missing, or `customerId` is invalid. |
+| `400 Bad Request` | Request payload is invalid or `quoteId` is missing. |
 | `401 Unauthorized` | Organization context was not found for the authenticated partner. |
-| `404 Not Found` | Customer or organization was not found. |
+| `404 Not Found` | Organization was not found. |
 | `410 Gone` | Quote has expired. |
 | `429 Too Many Requests` | Rate limit exceeded. Retry later. |
 | `500 Internal Server Error` | An unexpected error occurred on the JustGold side. |

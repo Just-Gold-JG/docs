@@ -11,7 +11,6 @@
   * [Overview](api/overview)
   * [Customers](api/customers)
   * [Prices](api/prices)
-  * [Preview](api/preview)
   * [Buy](api/buy)
   * [Sell](api/sell)
   * [Products](api/products)

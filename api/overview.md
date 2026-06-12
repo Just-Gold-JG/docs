@@ -167,7 +167,7 @@ sequenceDiagram
 | Sign every request | [Request Signing](../request-signing.md) |
 | Create or map customers | [Customers](customers.md) |
 | Display live prices | [Prices](prices.md) |
-| Generate quotes | [Preview](preview.md) |
+| Generate quotes | [Buy](buy.md), [Sell](sell.md), [Delivery](delivery.md) |
 | Place orders | [Buy](buy.md), [Sell](sell.md), [Delivery](delivery.md) |
 | Reconcile orders | [Transactions](transactions.md), [Webhooks](../webhooks.md) |
 
