@@ -32,6 +32,8 @@ See [Authentication](../authentication.md) and [Request Signing](../request-sign
 | --- | --- | --- | --- |
 | `status` | string | Yes | Updated transaction status. Must be one of `Pending`, `Completed`, `Failed`, or `Cancelled`. |
 | `notes` | string | No | Optional notes to store with the transaction status update. |
+| `paymentReference` | string | No | Reference identifier for the customer's payment (e.g. payment gateway transaction ID). |
+| `paymentMethod` | string | No | Payment method used by the customer (e.g. `Card`, `BankTransfer`, `Cash`). |
 
 #### Valid statuses
 
@@ -47,7 +49,9 @@ See [Authentication](../authentication.md) and [Request Signing](../request-sign
 ```json
 {
   "status": "Completed",
-  "notes": "Payment confirmed by provider reference PAY-123456"
+  "notes": "Payment confirmed by provider reference PAY-123456",
+  "paymentReference": "pay_3f8a9c1b2d",
+  "paymentMethod": "Card"
 }
 ```
 
@@ -68,6 +72,9 @@ See [Authentication](../authentication.md) and [Request Signing](../request-sign
 | `actualPrice` | string | Actual price per gram. |
 | `baseCurrencyQuotedPrice` | string | Quoted price in base currency. |
 | `baseCurrencyActualPrice` | string | Actual price in base currency. |
+| `notes` | string | Notes stored with the transaction, when set. |
+| `paymentReference` | string | Reference identifier for the customer's payment, when set. |
+| `paymentMethod` | string | Payment method used by the customer, when set. |
 | `createdAt` | string | Transaction creation timestamp. |
 | `updatedAt` | string | Transaction last update timestamp. |
 
@@ -90,6 +97,8 @@ See [Authentication](../authentication.md) and [Request Signing](../request-sign
   "actualPrice": "557.36",
   "baseCurrencyQuotedPrice": "151.78",
   "baseCurrencyActualPrice": "151.78",
+  "paymentReference": "pay_3f8a9c1b2d",
+  "paymentMethod": "Card",
   "createdAt": "2026-05-30T08:15:30.000Z",
   "updatedAt": "2026-05-30T08:17:10.000Z"
 }

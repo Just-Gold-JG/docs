@@ -104,13 +104,15 @@ This endpoint uses the quote returned by the sell preview endpoint.
 | `quoteId` | string | Yes | Quote identifier returned by the preview endpoint. Must be a UUID. |
 | `customerId` | string | Yes | Customer identifier. |
 | `organizationCode` | string | No | Organization code to attribute the transaction to a specific organization. If omitted, the quote's root organization is used. |
+| `paymentMethod` | string | No | Payment method used by the customer (e.g. `Card`, `BankTransfer`, `Cash`). |
 
 #### Sample request
 
 ```json
 {
   "quoteId": "aa1c4362-7b9c-4f48-8a2b-4d4bc3e19412",
-  "customerId": "6818744f3f1b2c7a9d5e4321"
+  "customerId": "6818744f3f1b2c7a9d5e4321",
+  "paymentMethod": "Card"
 }
 ```
 

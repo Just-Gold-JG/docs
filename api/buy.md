@@ -95,23 +95,12 @@ Places a buy order using a previously generated quote.
 POST /v1/buy
 ```
 
-#### Choosing the initial status
-
-Partners should choose the initial `status` based on when they collect payment from the customer.
-
-#### Synchronous payment flow
-
-Use this flow when customer payment is completed before creating the buy transaction.
-
-#### Asynchronous payment flow
-
-Use this flow when the partner creates the buy transaction before the customer payment result is final.
-
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `quoteId` | string | Yes | Quote identifier returned by the buy preview endpoint. Must be a UUID. |
 | `status` | string | No | Initial transaction status. One of `Pending`, `Completed`, `Failed`, `Cancelled`. Defaults to `Pending`. |
 | `paymentReference` | string | No | Reference identifier for the customer's payment (e.g. payment gateway transaction ID). |
+| `paymentMethod` | string | No | Payment method used by the customer (e.g. `Card`, `BankTransfer`, `Cash`). |
 | `subOrgCode` | string | No | Sub-organization code to attribute the transaction to, if your organization has sub-organizations. If omitted, the quote's root organization is used. |
 
 The customer is the one identified by `customerIdentifier` during the buy preview request — there is no need to pass a customer identifier again.
@@ -123,6 +112,7 @@ The customer is the one identified by `customerIdentifier` during the buy previe
   "quoteId": "aa1c4362-7b9c-4f48-8a2b-4d4bc3e19412",
   "status": "Completed",
   "paymentReference": "pay_3f8a9c1b2d",
+  "paymentMethod": "Card",
   "subOrgCode": "BR-DXB-01"
 }
 ```

@@ -162,13 +162,15 @@ POST /v1/delivery
 | --- | --- | --- | --- |
 | `quoteId` | string | Yes | Quote identifier returned by `POST /v1/delivery/preview`. Must be a UUID. |
 | `customerId` | string | Yes | Customer identifier. |
+| `paymentMethod` | string | No | Payment method used by the customer (e.g. `Card`, `BankTransfer`, `Cash`). |
 
 #### Sample request
 
 ```json
 {
   "quoteId": "aa1c4362-7b9c-4f48-8a2b-4d4bc3e19412",
-  "customerId": "6818744f3f1b2c7a9d5e4321"
+  "customerId": "6818744f3f1b2c7a9d5e4321",
+  "paymentMethod": "Card"
 }
 ```
 
