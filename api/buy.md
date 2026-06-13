@@ -53,9 +53,10 @@ Both values must be positive when provided.
 | `currency` | string | Organization currency used for the quote. |
 | `price` | string | Buy price per gram. |
 | `quantity` | string | Quoted metal quantity in grams. |
-| `amount` | string | Quoted pre-VAT amount. |
+| `total` | string | Quoted pre-VAT amount (quantity × price). |
 | `vat` | string | VAT amount. Currently `0`. |
-| `total` | string | Total quoted amount. |
+| `platformFee` | string | Platform fee applied on top of `total`, based on the organization's (or platform's) `platformFeeType`/`platformFee` settings. `Fixed` is a flat amount; `Percentage` is computed as a percentage of `total`. |
+| `grandTotal` | string | Grand total quoted amount, i.e. `total + vat + platformFee`. |
 | `expiresAt` | string | ISO 8601 timestamp (UTC) indicating when this quote expires. |
 
 #### Sample response
@@ -67,9 +68,10 @@ Both values must be positive when provided.
   "currency": "AED",
   "price": "557.36",
   "quantity": "0.1794172488147617",
-  "amount": "100",
-  "vat": "0",
   "total": "100",
+  "vat": "0",
+  "platformFee": "2",
+  "grandTotal": "102",
   "expiresAt": "2026-06-12T10:15:00.000Z"
 }
 ```
@@ -128,6 +130,10 @@ The customer is the one identified by `customerIdentifier` during the buy previe
 | `currency` | string | Organization currency used for the transaction. |
 | `quotedPrice` | string | Price per gram from the quote at the time it was generated. |
 | `status` | string | Transaction status, e.g. `Pending` or `Completed`. |
+| `vat` | string | VAT amount carried over from the quote. |
+| `platformFee` | string | Platform fee carried over from the quote. |
+| `total` | string | Pre-VAT amount at the actual price, i.e. `quantity * actualPrice`. |
+| `grandTotal` | string | Grand total charged, i.e. `total + vat + platformFee`. |
 
 #### Sample response
 
@@ -139,7 +145,11 @@ The customer is the one identified by `customerIdentifier` during the buy previe
   "quantity": "0.1794172488147617",
   "currency": "AED",
   "quotedPrice": "557.36",
-  "status": "Completed"
+  "status": "Completed",
+  "vat": "0",
+  "platformFee": "2",
+  "total": "100",
+  "grandTotal": "102"
 }
 ```
 
