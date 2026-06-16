@@ -42,4 +42,4 @@ JustGold responses are also signed and include:
 - Reject or retry requests if your server clock is out of sync.
 - Reject any response whose signature cannot be verified on your backend.
 
-Continue with [Request Signing](request-signing.md) for the exact HMAC flow for both requests and responses.
+Continue with [Request Signing](api/request-signing.md) for the exact HMAC flow for both requests and responses.

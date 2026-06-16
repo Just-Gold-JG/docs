@@ -1,5 +1,5 @@
 [Home](/)
 [Getting Started](/getting-started.md)
-[Authentication](/authentication.md)
+[Authentication](/api/authentication.md)
 [API Integration](/api/overview.md)
 [SDK Integration](/sdk/overview.md)

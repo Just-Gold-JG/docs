@@ -22,7 +22,7 @@ This endpoint requires:
 - `X-Timestamp`
 - `X-Signature`
 
-See [Authentication](../authentication.md) and [Request Signing](../request-signing.md).
+See [Authentication](api/authentication.md) and [Request Signing](api/request-signing.md).
 
 The organization is determined from `X-Client-Id` and does not need to be sent in the request body.
 
@@ -121,7 +121,7 @@ This endpoint requires:
 - `X-Timestamp`
 - `X-Signature`
 
-See [Authentication](../authentication.md) and [Request Signing](../request-signing.md).
+See [Authentication](api/authentication.md) and [Request Signing](api/request-signing.md).
 
 #### Path parameters
 
@@ -199,7 +199,7 @@ This endpoint requires:
 - `X-Timestamp`
 - `X-Signature`
 
-See [Authentication](../authentication.md) and [Request Signing](../request-signing.md).
+See [Authentication](api/authentication.md) and [Request Signing](api/request-signing.md).
 
 #### Path parameters
 
@@ -295,7 +295,7 @@ This endpoint requires:
 - `X-Timestamp`
 - `X-Signature`
 
-See [Authentication](../authentication.md) and [Request Signing](../request-signing.md).
+See [Authentication](api/authentication.md) and [Request Signing](api/request-signing.md).
 
 #### Path parameters
 
@@ -388,7 +388,7 @@ This endpoint requires:
 - `X-Timestamp`
 - `X-Signature`
 
-See [Authentication](../authentication.md) and [Request Signing](../request-signing.md).
+See [Authentication](api/authentication.md) and [Request Signing](api/request-signing.md).
 
 #### Path parameters
 
@@ -466,57 +466,6 @@ Same shape as [Get customer cart](#get-customer-cart):
 | `429 Too Many Requests` | Rate limit exceeded. Retry later. |
 | `500 Internal Server Error` | An unexpected error occurred on the JustGold side. |
 
-## Get customer token
-
-Issues a short-lived token for a customer, used to initialize the SDK on their behalf.
-
-#### Endpoint
-
-```http
-POST /v1/customers/:identifier/token
-```
-
-#### Authentication
-
-This endpoint requires:
-
-- `X-Client-Id`
-- `X-Timestamp`
-- `X-Signature`
-
-See [Authentication](../authentication.md) and [Request Signing](../request-signing.md).
-
-#### Path parameters
-
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `identifier` | string | Yes | Customer identifier. Can be a national ID, a unique ID from the partner's system, etc. |
-
-#### Sample response
-
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjdXN0b21lcklkIjoiNjgxODc0NGYzZjFiMmM3YTlkNWU0MzIxIiwiaWRlbnRpZmllciI6Ijc4NDE5ODc2NTQzMjEwOSIsIm9yZ2FuaXphdGlvbklkIjoiNjgxODc0NGYzZjFiMmM3YTlkNWUwMDAxIn0.signature"
-}
-```
-
-#### Response body
-
-| Field | Type | Description |
-| --- | --- | --- |
-| `token` | string | Short-lived JWT (valid for 10 minutes) identifying the customer. Use it to initialize the SDK. |
-
-#### Responses
-
-| Status | Meaning |
-| --- | --- |
-| `200 OK` | Token issued successfully. |
-| `400 Bad Request` | `identifier` is missing or invalid. |
-| `403 Forbidden` | Customer does not belong to the requesting organization. |
-| `404 Not Found` | Customer was not found. |
-| `429 Too Many Requests` | Rate limit exceeded. Retry later. |
-| `500 Internal Server Error` | An unexpected error occurred on the JustGold side. |
-
 ## Get customer vault
 
 Returns the customer's vault balances and sellable quantities for gold and silver.
@@ -541,7 +490,7 @@ This endpoint requires:
 - `X-Timestamp`
 - `X-Signature`
 
-See [Authentication](../authentication.md) and [Request Signing](../request-signing.md).
+See [Authentication](api/authentication.md) and [Request Signing](api/request-signing.md).
 
 #### Path parameters
 

@@ -65,4 +65,4 @@ Before production rollout, validate:
 - SDK launch and callback handling, if using SDK
 - error handling and retries
 
-Continue with [Authentication](authentication.md).
+Continue with [Authentication](api/authentication.md).

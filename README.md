@@ -23,6 +23,6 @@ Build digital gold experiences with JustGold using the integration path that fit
 
 1. Start with [Getting Started](getting-started.md)
 2. Pick [API integration](api/overview.md) or [SDK integration](sdk/overview.md)
-3. Review [Portal Access](portal-access.md) and [Authentication](authentication.md)
-4. For API builds, implement [Request Signing](request-signing.md)
+3. Review [Portal Access](portal-access.md) and [Authentication](api/authentication.md)
+4. For API builds, implement [Request Signing](api/request-signing.md)
 5. Follow the [Integration](integration.md)

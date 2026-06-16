@@ -3,12 +3,12 @@
 * [Home](README)
 * [Getting Started](getting-started)
 * [Portal Access](portal-access)
-* [Authentication](authentication)
-* [Request Signing](request-signing)
 * [Webhooks](webhooks)
 * [Integration](integration)
 * API Integration
   * [Overview](api/overview)
+  * [Authentication](api/authentication)
+  * [Request Signing](api/request-signing)
   * [Customers](api/customers)
   * [Prices](api/prices)
   * [Buy](api/buy)
@@ -18,6 +18,7 @@
   * [Transactions](api/transactions)
 * SDK Integration
   * [Overview](sdk/overview)
+  * [Session Token](sdk/session-token)
   * [React Native](sdk/react-native)
   * [Flutter](sdk/flutter)
 * [Errors](errors)

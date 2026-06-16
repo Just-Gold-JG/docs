@@ -16,7 +16,7 @@ This endpoint requires:
 - `X-Timestamp`
 - `X-Signature`
 
-See [Authentication](../authentication.md) and [Request Signing](../request-signing.md).
+See [Authentication](api/authentication.md) and [Request Signing](api/request-signing.md).
 
 ### Sample response
 

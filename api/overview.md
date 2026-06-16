@@ -158,13 +158,27 @@ sequenceDiagram
     end
 ```
 
+## Numeric values
+
+All currency amounts (e.g. `total`, `vat`, `platformFee`, `grandTotal`, `price`, `quotedPrice`) and metal quantities (e.g. `quantity`) are returned as **strings**, not numbers, to preserve precision. Do not parse them with native floating-point types — use an arbitrary-precision decimal library such as [decimal.js](https://mikemcl.github.io/decimal.js/) for any arithmetic or display formatting.
+
+- **Currency amounts**: display with 2 decimal places.
+- **Metal quantities**: display with 4 decimal places.
+
+```js
+import Decimal from 'decimal.js';
+
+const total = new Decimal(response.total).toFixed(2);     // currency
+const quantity = new Decimal(response.quantity).toFixed(4); // metal quantity
+```
+
 ## Build checklist
 
 | Step | Guide |
 | --- | --- |
 | Get partner portal access | [Portal Access](../portal-access.md) |
-| Configure credentials | [Authentication](../authentication.md) |
-| Sign every request | [Request Signing](../request-signing.md) |
+| Configure credentials | [Authentication](api/authentication.md) |
+| Sign every request | [Request Signing](api/request-signing.md) |
 | Create or map customers | [Customers](customers.md) |
 | Display live prices | [Prices](prices.md) |
 | Generate quotes | [Buy](buy.md), [Sell](sell.md), [Delivery](delivery.md) |
@@ -184,4 +198,4 @@ sequenceDiagram
 
 ## Next step
 
-Continue with [Authentication](../authentication.md), then implement [Request Signing](../request-signing.md).
+Continue with [Authentication](api/authentication.md), then implement [Request Signing](api/request-signing.md).
