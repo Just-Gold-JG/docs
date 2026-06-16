@@ -32,15 +32,13 @@ sequenceDiagram
     rect rgb(248, 250, 252)
         Note over Partner,Backend: Partner prepares a secure SDK launch from their backend
         Partner->>Backend: Request SDK launch token for customer
-        Backend->>JG: Create or map customer
-        JG-->>Backend: Customer reference
         Backend->>JG: Create short-lived SDK token
         JG-->>Backend: SDK token and expiry
     end
 
     rect rgb(255, 251, 235)
         Note over Backend,SDK: The app initializes SDK without receiving partner secrets
-        Backend-->>Host: Return SDK token, environment, customer reference
+        Backend-->>Host: Return session and refresh token
         Host->>SDK: Initialize with SDK token
         SDK->>JG: Validate token
         JG-->>SDK: Session ready
