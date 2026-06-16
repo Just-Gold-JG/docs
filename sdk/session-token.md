@@ -43,14 +43,14 @@ X-Signature: <hmac_signature>
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `token` | string | A signed JWT to pass to the SDK at initialization. Valid for **10 minutes**. |
+| `sessionToken` | string | A signed JWT to pass to the SDK at initialization. Valid for **10 minutes**. |
 | `refreshToken` | string | An opaque token used to refresh the session before it expires. |
 
 #### Sample response
 
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "sessionToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "refreshToken": "g1ZmVyZXNoX3Rva2VuX2V4YW1wbGU..."
 }
 ```
@@ -68,7 +68,7 @@ X-Signature: <hmac_signature>
 
 | Token | Lifetime | Purpose |
 | --- | --- | --- |
-| `token` | 10 minutes | Passed to the SDK at initialization to start a customer session. |
+| `sessionToken` | 10 minutes | Passed to the SDK at initialization to start a customer session. |
 | `refreshToken` | — | Used by the SDK to refresh the session before the session token expires. |
 
 Request a fresh token each time the customer opens a JustGold flow. The SDK uses the refresh token automatically to extend the session — your backend only needs to supply a new pair when the customer re-opens the flow or the refresh token itself has expired.
@@ -77,7 +77,7 @@ The refresh token is revoked as soon as the SDK is closed. A new token pair must
 
 ## Usage
 
-Pass the token to the SDK when initializing a customer session. Refer to the platform guide for the exact initialization call:
+Pass the `sessionToken` to the SDK when initializing a customer session. Refer to the platform guide for the exact initialization call:
 
 - [React Native](sdk/react-native.md)
 - [Flutter](sdk/flutter.md)
