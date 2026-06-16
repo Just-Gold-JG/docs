@@ -27,7 +27,7 @@ POST /v1/sell/preview
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `metal` | string | Yes | Allowed values: `Gold`, `Silver`. |
-| `customerId` | string | Yes | Customer identifier. |
+| `customerIdentifier` | string | Yes | Partner-scoped customer identifier. |
 | `amount` | string | Conditional | Numeric string. Required if `quantity` is not provided. |
 | `quantity` | string | Conditional | Numeric string. Required if `amount` is not provided. |
 
@@ -38,7 +38,7 @@ Both values must be positive when provided.
 
 ```json
 {
-  "customerId": "6818744f3f1b2c7a9d5e4321",
+  "customerIdentifier": "cust-10293",
   "quantity": "0.25",
   "metal": "Gold"
 }
@@ -53,9 +53,10 @@ Both values must be positive when provided.
 | `currency` | string | Organization currency used for the quote. |
 | `price` | string | Sell price per gram. |
 | `quantity` | string | Quoted metal quantity in grams. |
-| `amount` | string | Quoted pre-VAT amount. |
+| `total` | string | Quoted pre-fee amount (quantity × price). |
 | `vat` | string | VAT amount. Currently `0`. |
-| `total` | string | Total quoted amount. |
+| `platformFee` | string | Platform fee deducted from `total`, based on the organization's (or platform's) `platformFeeType`/`platformFee` settings. `Fixed` is a flat amount; `Percentage` is computed as a percentage of `total`. |
+| `grandTotal` | string | Net amount the customer receives, i.e. `total - vat - platformFee`. |
 | `expiresAt` | string | ISO 8601 timestamp (UTC) indicating when this quote expires. |
 
 #### Sample response
@@ -67,9 +68,10 @@ Both values must be positive when provided.
   "currency": "AED",
   "price": "535.07",
   "quantity": "0.25",
-  "amount": "133.7675",
-  "vat": "0",
   "total": "133.7675",
+  "vat": "0",
+  "platformFee": "2",
+  "grandTotal": "131.7675",
   "expiresAt": "2026-06-12T10:15:00.000Z"
 }
 ```
@@ -87,7 +89,7 @@ Both values must be positive when provided.
 
 ## Place sell order
 
-Places a sell order using a previously generated quote.
+Places a sell order using a previously generated quote. The customer is the one identified by `customerIdentifier` during the sell preview — there is no need to pass a customer identifier again.
 
 #### Endpoint
 
@@ -97,21 +99,19 @@ POST /v1/sell
 
 #### Request body
 
-This endpoint uses the quote returned by the sell preview endpoint.
-
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `quoteId` | string | Yes | Quote identifier returned by the preview endpoint. Must be a UUID. |
-| `customerId` | string | Yes | Customer identifier. |
-| `organizationCode` | string | No | Organization code to attribute the transaction to a specific organization. If omitted, the quote's root organization is used. |
+| `quoteId` | string | Yes | Quote identifier returned by the sell preview endpoint. Must be a UUID. |
+| `subOrgCode` | string | No | Sub-organization code to attribute the transaction to, if your organization has sub-organizations. If omitted, the quote's root organization is used. |
+| `paymentReference` | string | No | Reference identifier for the customer's payment (e.g. payment gateway transaction ID). |
 | `paymentMethod` | string | No | Payment method used by the customer (e.g. `Card`, `BankTransfer`, `Cash`). |
 
 #### Sample request
 
 ```json
 {
-  "quoteId": "aa1c4362-7b9c-4f48-8a2b-4d4bc3e19412",
-  "customerId": "6818744f3f1b2c7a9d5e4321",
+  "quoteId": "b79a7bb2-0fd3-4dd4-a56c-7165fb1a7b55",
+  "paymentReference": "pay_3f8a9c1b2d",
   "paymentMethod": "Card"
 }
 ```
@@ -121,12 +121,32 @@ This endpoint uses the quote returned by the sell preview endpoint.
 | Field | Type | Description |
 | --- | --- | --- |
 | `id` | string | Created transaction identifier. |
+| `type` | string | Transaction type. Always `Sell`. |
+| `metal` | string | `Gold` or `Silver`. |
+| `quantity` | string | Metal quantity sold, in grams. |
+| `currency` | string | Organization currency used for the transaction. |
+| `quotedPrice` | string | Price per gram from the quote at the time it was generated. |
+| `status` | string | Transaction status, e.g. `Pending` or `Completed`. |
+| `vat` | string | VAT amount carried over from the quote. |
+| `platformFee` | string | Platform fee carried over from the quote. |
+| `total` | string | Pre-fee amount at the actual price, i.e. `quantity × actualPrice`. |
+| `grandTotal` | string | Net amount the customer receives, i.e. `total - vat - platformFee`. |
 
 #### Sample response
 
 ```json
 {
-  "id": "682710cc3f1b2c7a9d5e2222"
+  "id": "682710cc3f1b2c7a9d5e2222",
+  "type": "Sell",
+  "metal": "Gold",
+  "quantity": "0.25",
+  "currency": "AED",
+  "quotedPrice": "535.07",
+  "status": "Pending",
+  "vat": "0",
+  "platformFee": "2",
+  "total": "133.7675",
+  "grandTotal": "131.7675"
 }
 ```
 
@@ -135,9 +155,9 @@ This endpoint uses the quote returned by the sell preview endpoint.
 | Status | Meaning |
 | --- | --- |
 | `201 Created` | Sell order placed successfully. |
-| `400 Bad Request` | Request payload is invalid, `quoteId` is missing, or `customerId` is invalid. |
+| `400 Bad Request` | Request payload is invalid or `quoteId` is missing. |
 | `401 Unauthorized` | Organization context was not found for the authenticated partner. |
-| `404 Not Found` | Customer or organization was not found. |
+| `404 Not Found` | Organization was not found. |
 | `410 Gone` | Quote has expired. |
 | `429 Too Many Requests` | Rate limit exceeded. Retry later. |
 | `500 Internal Server Error` | An unexpected error occurred on the JustGold side. |

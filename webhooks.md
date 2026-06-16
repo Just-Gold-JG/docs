@@ -42,15 +42,61 @@ export interface WebhookPayload {
 }
 ```
 
+### `transaction.status_changed`
+
+Sent when a transaction status changes (e.g. `Pending` → `Completed`).
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `transactionId` | string | Unique transaction identifier. |
+| `type` | string | Transaction type: `Buy`, `Sell`, or `Delivery`. |
+| `status` | string | New status: `Pending`, `Completed`, `Failed`, or `Cancelled`. |
+| `customerIdentifier` | string | Partner-scoped customer identifier. |
+| `metal` | string | `Gold` or `Silver`. |
+| `quantity` | string | Metal quantity in grams. |
+| `currency` | string | Transaction currency (e.g. `AED`). |
+| `price` | string | Actual price per gram at the time of transaction. |
+| `total` | string | Pre-fee amount (quantity × price). |
+| `platformFee` | string | Platform fee applied. Omitted if zero. |
+| `vat` | string | VAT amount applied. Omitted if zero. |
+| `grandTotal` | string | Final amount after fees and VAT. |
+| `organizationId` | string | Organization that processed the transaction. |
+| `createdAt` | string | ISO 8601 timestamp (UTC). |
+
+#### Sample event payload
+
 ```json
 {
   "eventType": "transaction.status_changed",
   "payload": {
     "transactionId": "txn_6818744f3f1b2c7a9d5e4321",
-    "status": "Completed"
+    "type": "Buy",
+    "status": "Completed",
+    "customerIdentifier": "cust-10293",
+    "metal": "Gold",
+    "quantity": "0.5000",
+    "currency": "AED",
+    "price": "535.07",
+    "total": "267.535",
+    "platformFee": "2",
+    "vat": "0",
+    "grandTotal": "269.535",
+    "organizationId": "682710cc3f1b2c7a9d5e1111",
+    "createdAt": "2026-06-11T10:15:00.000Z"
   }
 }
 ```
+
+### `customer.created`
+
+Sent when a new customer is created under your organization.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `customerId` | string | Internal JustGold customer identifier. |
+| `identifier` | string | Partner-scoped customer identifier. |
+| `organizationId` | string | Organization the customer belongs to. |
+| `createdAt` | string | ISO 8601 timestamp (UTC). |
 
 ## Signature verification
 

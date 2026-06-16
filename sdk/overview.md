@@ -155,10 +155,13 @@ sequenceDiagram
         Host->>Pay: Process payment
         Pay-->>Host: Payment success
         Host->>Backend: Confirm payment result
+        Backend->>JG: Confirm delivery transaction with payment reference
+        JG-->>Backend: Transaction confirmed
     end
 
     rect rgb(240, 253, 244)
         Note over Host,SDK: Customer returns to SDK for delivery transaction status
+        Backend-->>Host: Transaction reference
         Host->>SDK: Resume status screen
         SDK->>JG: Fetch transaction status
         JG-->>SDK: Processing, completed, or failed
