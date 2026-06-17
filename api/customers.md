@@ -548,3 +548,37 @@ See [Authentication](api/authentication.md) and [Request Signing](api/request-si
 | `503 Service Unavailable` | Price data is not available. |
 | `429 Too Many Requests` | Rate limit exceeded. Retry later. |
 | `500 Internal Server Error` | An unexpected error occurred on the JustGold side. |
+
+## Get customer organization
+
+Returns the organization associated with the authenticated session. Accepts either an SDK session token or an HMAC signature.
+
+#### Endpoint
+
+```http
+GET /v1/customers/organizations/me
+```
+
+#### Authentication
+
+Either:
+- `Authorization: Bearer <sessionToken>` — SDK session JWT
+- HMAC headers (`X-Client-Id`, `X-Timestamp`, `X-Signature`) — partner backend
+
+#### Sample response
+
+```json
+{
+  "id": "682710cc3f1b2c7a9d5e1111",
+  "name": "Just Gold",
+  "code": "JG",
+  "currency": "AED"
+}
+```
+
+#### Responses
+
+| Status | Meaning |
+| --- | --- |
+| `200 OK` | Organization returned. |
+| `401 Unauthorized` | Token or HMAC signature is missing or invalid. |
