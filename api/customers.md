@@ -507,6 +507,7 @@ See [Authentication](api/authentication.md) and [Request Signing](api/request-si
   "gold": {
     "purchased": "0.538001",
     "sold": "0.000000",
+    "redeemed": "0.000000",
     "availableInVault": "0.538001",
     "availableToSell": "0.538001",
     "lockedQuantity": "0.000000",
@@ -515,6 +516,7 @@ See [Authentication](api/authentication.md) and [Request Signing](api/request-si
   "silver": {
     "purchased": "1000.000000",
     "sold": "1.000000",
+    "redeemed": "0.000000",
     "availableInVault": "999.000000",
     "availableToSell": "999.000000",
     "lockedQuantity": "0.000000",
@@ -532,8 +534,9 @@ See [Authentication](api/authentication.md) and [Request Signing](api/request-si
 | `gold` | object | Gold vault balances. |
 | `silver` | object | Silver vault balances. |
 | `gold.purchased`, `silver.purchased` | string | Total completed buy quantity in grams. |
-| `gold.sold`, `silver.sold` | string | Total sold quantity in grams, excluding pending, failed, and cancelled sells. |
-| `gold.availableInVault`, `silver.availableInVault` | string | Purchased quantity minus sold quantity. |
+| `gold.sold`, `silver.sold` | string | Total quantity sold via SELL transactions in grams, excluding pending, failed, and cancelled transactions. |
+| `gold.redeemed`, `silver.redeemed` | string | Total quantity redeemed via DELIVERY transactions in grams, excluding pending, failed, and cancelled transactions. |
+| `gold.availableInVault`, `silver.availableInVault` | string | Purchased quantity minus sold quantity minus redeemed quantity. |
 | `gold.availableToSell`, `silver.availableToSell` | string | Quantity outside the lock-in period and available to sell. |
 | `gold.lockedQuantity`, `silver.lockedQuantity` | string | Quantity still inside the lock-in period. |
 | `gold.sellValue`, `silver.sellValue` | string | Sell value of the quantity available to sell. |
