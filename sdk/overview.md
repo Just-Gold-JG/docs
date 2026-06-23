@@ -100,6 +100,7 @@ sequenceDiagram
     participant Host as Host App
     participant SDK as JustGold SDK
     participant JG as JustGold API
+    participant Pay as Payment System
     participant Backend as Partner Backend
 
     rect rgb(248, 250, 252)
@@ -112,11 +113,20 @@ sequenceDiagram
         Customer->>SDK: Confirm sell
     end
 
+    rect rgb(255, 251, 235)
+        Note over SDK,Pay: Payment is handled by the host app
+        SDK-->>Host: Hand off for payment with quote reference
+        Host->>Pay: Process payment
+        Pay-->>Host: Payment success
+        Host->>Backend: Confirm payment result
+        Backend->>JG: Confirm sell transaction with payment reference
+        JG-->>Backend: Transaction confirmed
+    end
+
     rect rgb(240, 253, 244)
-        Note over SDK,Backend: No payment handoff is needed for sell
-        SDK->>JG: Create sell transaction
-        JG-->>SDK: Transaction reference
-        JG-->>Backend: Webhook update
+        Note over Host,SDK: Customer returns to SDK for final transaction state
+        Backend-->>Host: Transaction reference
+        Host->>SDK: Resume status screen
         SDK->>JG: Fetch transaction status
         JG-->>SDK: Processing, completed, or failed
         SDK-->>Customer: Show transaction status
