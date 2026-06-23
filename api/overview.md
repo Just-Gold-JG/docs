@@ -97,6 +97,7 @@ sequenceDiagram
     participant App as Partner App
     participant Backend as Partner Backend
     participant JG as JustGold API
+    participant Pay as Payment System
 
     rect rgb(248, 250, 252)
         Note over Customer,JG: Partner product owns the sell quote screen
@@ -108,12 +109,22 @@ sequenceDiagram
         App-->>Customer: Show sell quote summary
     end
 
-    rect rgb(240, 253, 244)
-        Note over Customer,App: Sell does not require a payment handoff
+    rect rgb(255, 251, 235)
+        Note over Customer,Pay: Partner product owns payment collection
         Customer->>App: Confirm sell
-        App->>Backend: Confirm sell request
-        Backend->>JG: POST /v1/sell with quote reference
-        JG-->>Backend: Transaction created
+        App->>Backend: Create pending transaction
+        Backend->>JG: Create pending sell transaction
+        JG-->>Backend: Pending transaction reference
+        Backend-->>App: Pending transaction reference
+        App->>Pay: Process payment
+        Pay-->>App: Payment success
+        App->>Backend: Confirm payment result
+    end
+
+    rect rgb(240, 253, 244)
+        Note over Backend,App: Backend places the JustGold order and app shows final status
+        Backend->>JG: Confirm sell transaction with payment reference
+        JG-->>Backend: Transaction confirmed
         Backend-->>App: Transaction status
         App-->>Customer: Show transaction status
     end
