@@ -4,6 +4,7 @@
 * [Getting Started](getting-started)
 * [Portal Access](portal-access)
 * [Webhooks](webhooks)
+* [Reconciliation](reconciliation)
 * [Integration](integration)
 * API Integration
   * [Overview](api/overview)
