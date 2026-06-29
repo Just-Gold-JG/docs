@@ -80,19 +80,19 @@ POST /v1/delivery/preview
 | `items[].mintingCharges` | string | Minting charges for the line item. |
 | `items[].serviceCharges` | string | Service charges for the line item. |
 | `items[].itemTotal` | string | Total charges for the line item (minting + service). |
-| `metalSummary` | object | Metal totals grouped by `Gold` and/or `Silver`. |
-| `metalSummary.Gold.totalQuantity` | string | Total gold weight needed for the delivery, in grams. |
-| `metalSummary.Gold.vaultQuantityUsed` | string | Gold weight covered from the customer's vault, in grams. |
-| `metalSummary.Gold.quantityToPurchase` | string | Gold weight still required after vault usage, in grams. |
-| `metalSummary.Gold.pricePerGram` | string | Gold price per gram used for this quote. |
-| `metalSummary.Gold.purchaseCost` | string | Cost of the gold weight still required to be purchased. |
-| `metalSummary.Gold.totalCharges` | string | Total gold product charges (minting + service across items). |
-| `metalSummary.Silver.totalQuantity` | string | Total silver weight needed for the delivery, in grams. |
-| `metalSummary.Silver.vaultQuantityUsed` | string | Silver weight covered from the customer's vault, in grams. |
-| `metalSummary.Silver.quantityToPurchase` | string | Silver weight still required after vault usage, in grams. |
-| `metalSummary.Silver.pricePerGram` | string | Silver price per gram used for this quote. |
-| `metalSummary.Silver.purchaseCost` | string | Cost of the silver weight still required to be purchased. |
-| `metalSummary.Silver.totalCharges` | string | Total silver product charges (minting + service across items). |
+| `metalSummary` | object | Metal totals grouped by `gold` and/or `silver`. |
+| `metalSummary.gold.totalQuantity` | string | Total gold weight needed for the delivery, in grams. |
+| `metalSummary.gold.vaultQuantityUsed` | string | Gold weight covered from the customer's vault, in grams. |
+| `metalSummary.gold.quantityToPurchase` | string | Gold weight still required after vault usage, in grams. |
+| `metalSummary.gold.quotedPrice` | string | Gold price per gram used for this quote. |
+| `metalSummary.gold.purchaseCost` | string | Cost of the gold weight still required to be purchased. |
+| `metalSummary.gold.totalCharges` | string | Total gold product charges (minting + service across items). |
+| `metalSummary.silver.totalQuantity` | string | Total silver weight needed for the delivery, in grams. |
+| `metalSummary.silver.vaultQuantityUsed` | string | Silver weight covered from the customer's vault, in grams. |
+| `metalSummary.silver.quantityToPurchase` | string | Silver weight still required after vault usage, in grams. |
+| `metalSummary.silver.quotedPrice` | string | Silver price per gram used for this quote. |
+| `metalSummary.silver.purchaseCost` | string | Cost of the silver weight still required to be purchased. |
+| `metalSummary.silver.totalCharges` | string | Total silver product charges (minting + service across items). |
 | `deliveryCharges` | string | Delivery charge for the selected emirate. |
 | `total` | string | Metal purchase cost total (sum of `metalSummary.*.purchaseCost`). |
 | `vat` | string | VAT calculated on charges (minting/service charges + delivery charges). |
@@ -123,11 +123,11 @@ Only metals present in the cart are included in `metalSummary`.
     }
   ],
   "metalSummary": {
-    "Gold": {
+    "gold": {
       "totalQuantity": "2",
       "vaultQuantityUsed": "1.25",
       "quantityToPurchase": "0.75",
-      "pricePerGram": "250",
+      "quotedPrice": "250",
       "purchaseCost": "187.5",
       "totalCharges": "20"
     }
