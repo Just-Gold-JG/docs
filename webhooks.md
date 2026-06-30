@@ -6,6 +6,7 @@ Your endpoint must verify the webhook signature before processing the event.
 
 ## Supported events
 
+- `transaction.created`
 - `transaction.status_changed`
 - `customer.created`
 
@@ -41,6 +42,103 @@ export interface WebhookPayload {
   }
 }
 ```
+
+### `transaction.created`
+
+Sent when a new transaction is created, regardless of its initial status.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | string | Transaction identifier. |
+| `type` | string | Transaction type. One of `Buy`, `Sell`, or `Delivery`. |
+| `metal` | string | `Gold` or `Silver`, when applicable. |
+| `status` | string | Initial transaction status. Typically `Pending`. |
+| `quantity` | string | Metal quantity in grams. |
+| `customerId` | string | Customer identifier. |
+| `organizationIds` | array | Organization hierarchy associated with the transaction. |
+| `currency` | string | Transaction currency. |
+| `quotedPrice` | string | Quoted price per gram. |
+| `vat` | string | VAT amount applied to the transaction. |
+| `platformFee` | string | Platform fee applied to the transaction. |
+| `total` | string | Transaction total before fees. |
+| `grandTotal` | string | Final total including all fees. |
+| `notes` | string | Notes stored with the transaction, when set. |
+| `paymentReference` | string | Partner payment reference, when set. |
+| `paymentMethod` | string | Payment method, when set. |
+| `settlement` | object | Settlement breakdown, when available. See below. |
+| `createdAt` | string | Transaction creation timestamp (UTC). |
+| `updatedAt` | string | Transaction last update timestamp (UTC). |
+
+##### `settlement` object
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `metalMargin` | string | Margin earned on the metal spread. |
+| `jgMarginPct` | number | JustGold's share of the margin as a percentage. |
+| `partnerMarginPct` | number | Partner's share of the margin as a percentage. |
+| `jgAmount` | string | Amount allocated to JustGold. |
+| `partnerAmount` | string | Amount allocated to the partner. |
+| `platformFee` | string | Platform fee collected. |
+| `vatOnPlatformFee` | string | VAT applied on the platform fee. |
+| `totalMintingFee` | string | Total minting fee charged across all delivery items. Present on `Delivery` transactions only. |
+| `totalDeliveryFee` | string | Total delivery/service fee charged. Present on `Delivery` transactions only. |
+| `jgMintingFee` | string | JustGold's share of the minting fee. Present on `Delivery` transactions only. |
+| `partnerMintingFee` | string | Partner's share of the minting fee. Present on `Delivery` transactions only. |
+| `vatOnMintingFee` | string | VAT applied on the total minting fee. Present on `Delivery` transactions only. |
+| `vatOnDeliveryFee` | string | VAT applied on the total delivery fee. Present on `Delivery` transactions only. |
+| `vatOnJGMintingFee` | string | VAT applied on JustGold's minting fee share. Present on `Delivery` transactions only. |
+| `vatOnPartnerMintingFee` | string | VAT applied on the partner's minting fee share. Present on `Delivery` transactions only. |
+| `vatOnJGDeliveryFee` | string | VAT applied on JustGold's delivery fee share. Present on `Delivery` transactions only. |
+| `vatOnPartnerDeliveryFee` | string | VAT applied on the partner's delivery fee share. Present on `Delivery` transactions only. |
+| `partnerMintingFeeMarginPct` | number | Partner's margin percentage on minting fees. Present on `Delivery` transactions only. |
+| `jgMintingFeeMarginPct` | number | JustGold's margin percentage on minting fees. Present on `Delivery` transactions only. |
+| `partnerDeliveryFeeMarginPct` | number | Partner's margin percentage on delivery fees. Present on `Delivery` transactions only. |
+| `jgDeliveryFeeMarginPct` | number | JustGold's margin percentage on delivery fees. Present on `Delivery` transactions only. |
+| `totalJG` | string | Total amount due to JustGold. |
+| `totalPartner` | string | Total amount due to the partner. |
+| `settlementStatus` | string | `Pending` or `Settled`. |
+| `settlementDate` | string | Date settlement was processed, when set. |
+
+#### Sample event payload
+
+```json
+{
+  "eventType": "transaction.created",
+  "payload": {
+    "id": "682710cc3f1b2c7a9d5e1111",
+    "type": "Buy",
+    "metal": "Gold",
+    "status": "Pending",
+    "quantity": "0.1794172488147617",
+    "customerId": "6818744f3f1b2c7a9d5e4321",
+    "organizationIds": [
+      "6818744f3f1b2c7a9d5e9999"
+    ],
+    "currency": "AED",
+    "quotedPrice": "557.36",
+    "vat": "0.00",
+    "platformFee": "2.00",
+    "total": "100.00",
+    "grandTotal": "102.00",
+    "settlement": {
+      "metalMargin": "5.57",
+      "jgMarginPct": 40,
+      "partnerMarginPct": 60,
+      "jgAmount": "2.23",
+      "partnerAmount": "3.34",
+      "platformFee": "2.00",
+      "vatOnPlatformFee": "0.00",
+      "totalJG": "4.23",
+      "totalPartner": "3.34",
+      "settlementStatus": "Pending"
+    },
+    "createdAt": "2026-06-30T20:10:00.000Z",
+    "updatedAt": "2026-06-30T20:10:00.000Z"
+  }
+}
+```
+
+---
 
 ### `transaction.status_changed`
 
