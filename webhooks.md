@@ -6,6 +6,7 @@ Your endpoint must verify the webhook signature before processing the event.
 
 ## Supported events
 
+- `transaction.created`
 - `transaction.status_changed`
 - `customer.created`
 
@@ -38,6 +39,63 @@ export interface WebhookPayload {
   eventType: WebhookEventType;
   payload: {
     [key: string]: unknown;
+  }
+}
+```
+
+### `transaction.created`
+
+Sent when a new transaction is created (status will be `Pending`).
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `transactionId` | string | Unique transaction identifier. |
+| `type` | string | Transaction type: `Buy`, `Sell`, or `Delivery`. |
+| `status` | string | Always `Pending` at creation. |
+| `customerIdentifier` | string | Partner-scoped customer identifier. |
+| `metal` | string | `Gold` or `Silver`. |
+| `quantity` | string | Metal quantity in grams. |
+| `currency` | string | Transaction currency (e.g. `AED`). |
+| `price` | string | Quoted price per gram at transaction time. |
+| `total` | string | Pre-fee amount (quantity × price). |
+| `platformFee` | string | Platform fee applied. Omitted if zero. |
+| `vat` | string | VAT amount applied. Omitted if zero. |
+| `grandTotal` | string | Final amount after fees and VAT. |
+| `organizationId` | string | Organization that processed the transaction. |
+| `settlement` | object | Pre-computed settlement breakdown. See [settlement object](api/transactions.md#settlement-object). |
+| `createdAt` | string | ISO 8601 timestamp (UTC). |
+
+#### Sample event payload
+
+```json
+{
+  "eventType": "transaction.created",
+  "payload": {
+    "transactionId": "682710cc3f1b2c7a9d5e1111",
+    "type": "Buy",
+    "status": "Pending",
+    "customerIdentifier": "cust-10293",
+    "metal": "Gold",
+    "quantity": "2.0",
+    "currency": "AED",
+    "price": "244.80",
+    "total": "489.60",
+    "platformFee": "10",
+    "grandTotal": "499.60",
+    "organizationId": "6818744f3f1b2c7a9d5e9999",
+    "settlement": {
+      "metalMargin": "4.80",
+      "jgMarginPct": 80,
+      "partnerMarginPct": 20,
+      "jgAmount": "3.84",
+      "partnerAmount": "0.96",
+      "platformFee": "10",
+      "vatOnPlatformFee": "0",
+      "totalJG": "243.84",
+      "totalPartner": "10.96",
+      "settlementStatus": "Pending"
+    },
+    "createdAt": "2026-06-30T08:15:30.000Z"
   }
 }
 ```
