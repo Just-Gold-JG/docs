@@ -103,6 +103,104 @@ The organization is determined from `X-Client-Id` and does not need to be sent i
 | `429 Too Many Requests` | Rate limit exceeded. Retry later. |
 | `500 Internal Server Error` | An unexpected error occurred on the JustGold side. |
 
+---
+
+## Update customer
+
+Updates a customer's profile information. At least one field must be provided.
+
+#### Endpoint
+
+```http
+PATCH /v1/customers/:customerIdentifier
+```
+
+#### Authentication
+
+This endpoint requires:
+
+- `X-Client-Id`
+- `X-Timestamp`
+- `X-Signature`
+
+See [Authentication](api/authentication.md) and [Request Signing](api/request-signing.md).
+
+#### Path parameters
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `customerIdentifier` | string | Yes | Partner-scoped customer identifier. |
+
+#### Request body
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `firstName` | string | No | Customer's first name. |
+| `lastName` | string | No | Customer's last name. |
+| `nationalId` | string | No | Customer's Emirates ID or national identity document number. May be stored in masked form (e.g. `***-****-1234-*`). At least one field must be provided. |
+
+#### Sample request
+
+```json
+{
+  "firstName": "Sara",
+  "lastName": "Al Mansoori",
+  "nationalId": "784-1990-1234567-1"
+}
+```
+
+#### Response body
+
+Returns the updated customer object inside a `customer` wrapper.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `customer.id` | string | Customer identifier. |
+| `customer.identifier` | string | Partner-scoped customer identifier. |
+| `customer.firstName` | string | Updated first name. |
+| `customer.lastName` | string | Updated last name. |
+| `customer.nationalId` | string \| null | Emirates ID or national identity document number. May be masked. |
+| `customer.email` | string \| null | Customer email, when set. |
+| `customer.phone` | object \| null | Customer phone, when set. |
+| `customer.gender` | string | Customer gender. |
+| `customer.organizationId` | string | Organization the customer belongs to. |
+| `customer.termsAccepted` | boolean | Whether the customer has accepted terms. |
+| `customer.createdAt` | string | Customer creation timestamp. |
+| `customer.updatedAt` | string | Customer last update timestamp. |
+
+#### Sample response
+
+```json
+{
+  "customer": {
+    "id": "6818744f3f1b2c7a9d5e4321",
+    "identifier": "cust-10293",
+    "firstName": "Sara",
+    "lastName": "Al Mansoori",
+    "nationalId": "***-****-1234567-*",
+    "email": "sara@example.com",
+    "phone": null,
+    "gender": "Female",
+    "organizationId": "6818744f3f1b2c7a9d5e9999",
+    "termsAccepted": true,
+    "createdAt": "2026-05-01T10:00:00.000Z",
+    "updatedAt": "2026-07-01T14:30:00.000Z"
+  }
+}
+```
+
+#### Responses
+
+| Status | Meaning |
+| --- | --- |
+| `200 OK` | Customer updated successfully. |
+| `400 Bad Request` | Request payload is invalid or no fields were provided. |
+| `404 Not Found` | Customer was not found. |
+| `429 Too Many Requests` | Rate limit exceeded. Retry later. |
+| `500 Internal Server Error` | An unexpected error occurred on the JustGold side. |
+
+---
+
 ## Get customer holdings
 
 Returns the current gold and silver holdings for a customer.

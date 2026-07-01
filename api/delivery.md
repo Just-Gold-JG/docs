@@ -40,6 +40,7 @@ POST /v1/delivery/preview
 | `useVault` | object | No | Optional flags to use the customer's available vault balance before calculating purchase quantity. |
 | `useVault.gold` | boolean | No | Use available gold vault balance for gold items. |
 | `useVault.silver` | boolean | No | Use available silver vault balance for silver items. |
+| `platformFee` | number | No | Flat platform fee to apply to this quote. Overrides the organisation's configured platform fee. Pass `0` to waive the fee entirely. Omit to use the default setting. |
 
 #### Sample request
 

@@ -30,6 +30,7 @@ POST /v1/sell/preview
 | `customerIdentifier` | string | Yes | Partner-scoped customer identifier. |
 | `amount` | string | Conditional | Numeric string. Required if `quantity` is not provided. |
 | `quantity` | string | Conditional | Numeric string. Required if `amount` is not provided. |
+| `platformFee` | number | No | Flat platform fee to deduct on this quote. Overrides the organisation's configured platform fee. Pass `0` to waive the fee entirely. Omit to use the default setting. |
 
 Provide exactly one of `amount` or `quantity`.
 Both values must be positive when provided.
