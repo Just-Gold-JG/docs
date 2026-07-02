@@ -35,6 +35,7 @@ POST /v1/delivery/preview
 | `deliveryAddress` | object | Yes | Customer delivery address. |
 | `deliveryAddress.emirate` | string | Yes | UAE emirate used to calculate delivery charges. |
 | `deliveryAddress.area` | string | Yes | Area or locality. |
+| `deliveryAddress.city` | string | No | City name. |
 | `deliveryAddress.street` | string | Yes | Street name or number. |
 | `deliveryAddress.building` | string | Yes | Building name or number. |
 | `useVault` | object | No | Optional flags to use the customer's available vault balance before calculating purchase quantity. |
@@ -56,6 +57,7 @@ POST /v1/delivery/preview
   "deliveryAddress": {
     "emirate": "Dubai",
     "area": "Business Bay",
+    "city": "Dubai",
     "street": "Marasi Drive",
     "building": "Bay Square"
   },
@@ -142,6 +144,7 @@ Only metals present in the cart are included in `metalSummary`.
   "deliveryAddress": {
     "emirate": "Dubai",
     "area": "Business Bay",
+    "city": "Dubai",
     "street": "Marasi Drive",
     "building": "Bay Square"
   },
