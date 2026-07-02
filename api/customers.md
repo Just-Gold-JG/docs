@@ -137,7 +137,10 @@ See [Authentication](api/authentication.md) and [Request Signing](api/request-si
 | --- | --- | --- | --- |
 | `firstName` | string | No | Customer's first name. |
 | `lastName` | string | No | Customer's last name. |
-| `nationalId` | string | No | Customer's Emirates ID or national identity document number. May be stored in masked form (e.g. `***-****-1234-*`). At least one field must be provided. |
+| `nationalId` | string | No | Customer's Emirates ID or national identity document number. May be stored in masked form (e.g. `***-****-1234567-*`). |
+| `nationalIdExpiry` | string | No | Expiry date of the national identity document in `YYYY-MM-DD` format. |
+
+At least one field must be provided.
 
 #### Sample request
 
@@ -145,7 +148,8 @@ See [Authentication](api/authentication.md) and [Request Signing](api/request-si
 {
   "firstName": "Sara",
   "lastName": "Al Mansoori",
-  "nationalId": "784-1990-1234567-1"
+  "nationalId": "784-1990-1234567-1",
+  "nationalIdExpiry": "2030-03-15"
 }
 ```
 
@@ -160,6 +164,7 @@ Returns the updated customer object inside a `customer` wrapper.
 | `customer.firstName` | string | Updated first name. |
 | `customer.lastName` | string | Updated last name. |
 | `customer.nationalId` | string \| null | Emirates ID or national identity document number. May be masked. |
+| `customer.nationalIdExpiry` | string \| null | Expiry date of the national identity document (`YYYY-MM-DD`). |
 | `customer.email` | string \| null | Customer email, when set. |
 | `customer.phone` | object \| null | Customer phone, when set. |
 | `customer.gender` | string | Customer gender. |
@@ -178,6 +183,7 @@ Returns the updated customer object inside a `customer` wrapper.
     "firstName": "Sara",
     "lastName": "Al Mansoori",
     "nationalId": "***-****-1234567-*",
+    "nationalIdExpiry": "2030-03-15",
     "email": "sara@example.com",
     "phone": null,
     "gender": "Female",
