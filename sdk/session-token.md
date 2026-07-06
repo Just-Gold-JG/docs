@@ -2,7 +2,7 @@
 
 Before rendering the JustGold SDK (`JustGoldWebView`), your mobile app needs a **short-lived session JWT** and optional **refresh token** from your backend. The app passes these to the SDK — your `client_secret` **never** leaves your server.
 
-> See also: [SDK Overview](overview.md) · [React Native](react-native.md) · [Flutter](flutter.md)
+> See also: [SDK Overview](sdk/overview.md) · [React Native](sdk/react-native.md) · [Flutter](sdk/flutter.md)
 
 ---
 
@@ -213,7 +213,7 @@ Content-Type: application/json
 />
 ```
 
-Full guide: [React Native integration](react-native.md)
+Full guide: [React Native integration](sdk/react-native.md)
 
 ### Flutter
 
@@ -228,7 +228,7 @@ JustGoldWebView(
 )
 ```
 
-Full guide: [Flutter integration](flutter.md)
+Full guide: [Flutter integration](sdk/flutter.md)
 
 ---
 
@@ -244,8 +244,8 @@ Full guide: [Flutter integration](flutter.md)
 
 ## Related docs
 
-- [SDK Overview](overview.md)
-- [React Native integration](react-native.md)
-- [Flutter integration](flutter.md)
+- [SDK Overview](sdk/overview.md)
+- [React Native integration](sdk/react-native.md)
+- [Flutter integration](sdk/flutter.md)
 - [Request Signing](../api/request-signing.md)
 - [Customers API](../api/customers.md)

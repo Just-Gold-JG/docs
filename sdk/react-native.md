@@ -2,7 +2,7 @@
 
 Embed the JustGold gold & silver trading UI in your React Native app with **`@justgold/rn-sdk`**. The UI ships as a pre-built HTML bundle inside the npm package — no CDN or separate UI deploy.
 
-> **Prerequisites:** [Session Token](session-token.md) from your backend · [SDK Overview](overview.md)
+> **Prerequisites:** [Session Token](sdk/session-token.md) from your backend · [SDK Overview](sdk/overview.md)
 
 ## Integration shape
 
@@ -19,7 +19,7 @@ flowchart TD
     F -->|onSessionExpired| B
 ```
 
-Your backend still owns HMAC credentials and customer mapping. The mobile app receives only short-lived JWTs — see [Session Token](session-token.md).
+Your backend still owns HMAC credentials and customer mapping. The mobile app receives only short-lived JWTs — see [Session Token](sdk/session-token.md).
 
 ---
 
@@ -61,7 +61,7 @@ Do **not** put `client_secret` in the mobile app. Call **your** backend, which s
 }
 ```
 
-See [Session Token](session-token.md) and [Request Signing](../api/request-signing.md).
+See [Session Token](sdk/session-token.md) and [Request Signing](../api/request-signing.md).
 
 ---
 
@@ -226,8 +226,8 @@ Payment, KYC, and EFR flows outside the SDK use permissions your app declares se
 
 ## Related docs
 
-- [SDK Overview](overview.md)
-- [Session Token](session-token.md)
-- [Flutter integration](flutter.md)
+- [SDK Overview](sdk/overview.md)
+- [Session Token](sdk/session-token.md)
+- [Flutter integration](sdk/flutter.md)
 - [Portal Access](../portal-access.md)
 - [Webhooks](../webhooks.md)

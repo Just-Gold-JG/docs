@@ -209,12 +209,12 @@ sequenceDiagram
 
 ## Platform guides
 
-- [React Native integration](react-native.md)
-- [Flutter integration](flutter.md)
+- [React Native integration](sdk/react-native.md)
+- [Flutter integration](sdk/flutter.md)
 
 ## Before you build
 
-1. **Backend session endpoint** — expose an app-facing route that returns `sessionToken` and `refreshToken`. See [Session Token](session-token.md).
+1. **Backend session endpoint** — expose an app-facing route that returns `sessionToken` and `refreshToken`. See [Session Token](sdk/session-token.md).
 2. **HMAC credentials** — store `client_id` and `client_secret` on your backend only. Use `@justgold/partner-sdk` for signing.
 3. **Install the client package** — `@justgold/rn-sdk` or `justgold_sdk` ^1.0.0.
 4. **Implement callbacks** — at minimum: `onClose`, `onSessionExpired`, `onPaymentRequired`, `onTokensRefreshed`.
@@ -225,4 +225,4 @@ Contact your JustGold onboarding team for sandbox credentials, bundle IDs, and p
 
 ## Next step
 
-Choose your platform guide: [React Native](react-native.md) or [Flutter](flutter.md).
+Choose your platform guide: [React Native](sdk/react-native.md) or [Flutter](sdk/flutter.md).
