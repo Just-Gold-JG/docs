@@ -166,7 +166,7 @@ PATCH /v1/transactions/:transactionId
 
 See [Transactions](../api/transactions.md).
 
-### Pattern A — Overlay (recommended)
+### Recommended flow
 
 Keep `JustGoldConnect` **mounted**. Push or present payment UI on top (modal, overlay, or new screen). The SDK polls transaction status every 2s on its internal pending screen.
 
@@ -179,13 +179,13 @@ onPaymentRequest={(transaction) => navigation.navigate('PartnerPayment', transac
 // 3. navigation.goBack() — SDK shows success/failure automatically
 ```
 
-### Pattern B — SDK remount
+### Unmounting during payment
 
 If you **must unmount** `JustGoldConnect` during payment (e.g. native PSP SDK), remount it with the **same** `token` and `refreshToken` after PATCH. The `@justgold/rn-sdk` wrapper caches the session and restores the payment route automatically. Do **not** re-fetch tokens unless the session expired.
 
 ### Optional: `resume(transactionId)`
 
-The second argument to `onPaymentRequest` posts `PAYMENT_RESULT` to the SDK for instant navigation. **Not required** when using Pattern A or B.
+The second argument to `onPaymentRequest` posts `PAYMENT_RESULT` to the SDK for instant navigation. **Not required** for the recommended overlay flow or when remounting with the same session tokens.
 
 ---
 

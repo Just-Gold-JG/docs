@@ -207,7 +207,7 @@ PATCH /v1/transactions/:transactionId
 
 See [Transactions](../api/transactions.md).
 
-### Pattern A — Overlay (recommended)
+### Recommended flow
 
 Keep `JustGoldConnect` **mounted**. Push a full-screen payment route on top:
 
@@ -222,13 +222,13 @@ onPaymentRequest: (payload, _) {
 // 3. Navigator.pop — SDK polls and shows the result
 ```
 
-### Pattern B — SDK remount
+### Unmounting during payment
 
 If you **unmount** `JustGoldConnect` during payment, remount it with the **same** `token` and `refreshToken` after PATCH. The `justgold_sdk` wrapper caches the session and restores the payment route via `resumePaymentTransactionId` on the next `INIT_SESSION`. Do **not** re-fetch tokens unless the session expired.
 
 ### Optional: `resume(transactionId)`
 
-The second callback argument posts `PAYMENT_RESULT` for instant navigation. **Not required** for Pattern A or B.
+The second callback argument posts `PAYMENT_RESULT` for instant navigation. **Not required** for the recommended overlay flow or when remounting with the same session tokens.
 
 ---
 
