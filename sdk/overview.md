@@ -12,6 +12,27 @@ Choose an SDK if you need:
 - native app support for React Native or Flutter
 - a cleaner handoff between your authenticated user and JustGold flows
 
+## SDK packages
+
+| Platform | Package | Registry | UI hosting |
+| --- | --- | --- | --- |
+| React Native | `@justgold/rn-sdk` | [npm](https://www.npmjs.com/package/@justgold/rn-sdk) | Bundled inside the npm package |
+| Flutter | `justgold_sdk` | [pub.dev](https://pub.dev/packages/justgold_sdk) | Bundled inside the pub package |
+| Backend (all platforms) | `@justgold/partner-sdk` | [npm](https://www.npmjs.com/package/@justgold/partner-sdk) | Server-side HMAC signing only |
+
+Both mobile SDKs embed the same trading UI as a **WebView** (`JustGoldWebView`). Your app renders the component full-screen and handles callbacks — there is no separate `launch()` API.
+
+**API environments:**
+
+| Environment | Base URL |
+| --- | --- |
+| Sandbox | `https://api.dev.partner.justgold.app` |
+| Production | `https://api.partner.justgold.app` |
+
+Pass `sandbox: true` (RN) or `sandbox: true` (Flutter) to the SDK component — partners do not configure `apiBaseUrl` in the client.
+
+---
+
 ## Sequence diagrams
 
 Your app starts the JustGold SDK from an authenticated user session. Your backend still owns partner credentials, customer mapping, and any server-side token or session exchange required for the SDK.
@@ -63,7 +84,7 @@ sequenceDiagram
     rect rgb(248, 250, 252)
         Note over Customer,JG: Quote and confirmation happen inside the SDK
         Customer->>Host: Open gold buy flow
-        Host->>SDK: Launch buy flow
+        Host->>SDK: Render SDK (JustGoldWebView)
         Customer->>SDK: Enter amount or quantity
         SDK->>JG: Get buy quote
         JG-->>SDK: Quote, price, quantity, fees, expiry
@@ -77,7 +98,7 @@ sequenceDiagram
         Host->>Pay: Process payment
         Pay-->>Host: Payment success
         Host->>Backend: Confirm payment result
-        Backend->>JG: Confirm buy transaction with payment reference
+        Backend->>JG: PATCH transaction status (HMAC)
         JG-->>Backend: Transaction confirmed
     end
 
@@ -106,7 +127,7 @@ sequenceDiagram
     rect rgb(248, 250, 252)
         Note over Customer,JG: Quote and confirmation happen inside the SDK
         Customer->>Host: Open gold sell flow
-        Host->>SDK: Launch sell flow
+        Host->>SDK: Render SDK (JustGoldWebView)
         SDK->>JG: Get sell quote
         JG-->>SDK: Quote, price, quantity, fees, expiry
         SDK-->>Customer: Show sell quote summary
@@ -119,7 +140,7 @@ sequenceDiagram
         Host->>Pay: Process payment
         Pay-->>Host: Payment success
         Host->>Backend: Confirm payment result
-        Backend->>JG: Confirm sell transaction with payment reference
+        Backend->>JG: PATCH transaction status (HMAC)
         JG-->>Backend: Transaction confirmed
     end
 
@@ -148,7 +169,7 @@ sequenceDiagram
     rect rgb(248, 250, 252)
         Note over Customer,JG: Cart checkout and quote preview happen inside the SDK
         Customer->>Host: Open delivery flow
-        Host->>SDK: Launch delivery flow
+        Host->>SDK: Render SDK (JustGoldWebView)
         Customer->>SDK: Review cart and delivery address
         Customer->>SDK: Select redeem from vault option
         SDK->>JG: Preview delivery quote with cart and useVault
@@ -163,7 +184,7 @@ sequenceDiagram
         Host->>Pay: Process payment
         Pay-->>Host: Payment success
         Host->>Backend: Confirm payment result
-        Backend->>JG: Confirm delivery transaction with payment reference
+        Backend->>JG: PATCH transaction status (HMAC)
         JG-->>Backend: Transaction confirmed
     end
 
@@ -193,15 +214,15 @@ sequenceDiagram
 
 ## Before you build
 
-Confirm these items with your JustGold onboarding contact:
+1. **Backend session endpoint** — expose an app-facing route that returns `sessionToken` and `refreshToken`. See [Session Token](session-token.md).
+2. **HMAC credentials** — store `client_id` and `client_secret` on your backend only. Use `@justgold/partner-sdk` for signing.
+3. **Install the client package** — `@justgold/rn-sdk` or `justgold_sdk` ^1.0.0.
+4. **Implement callbacks** — at minimum: `onClose`, `onSessionExpired`, `onPaymentRequired`, `onTokensRefreshed`.
+5. **Payment handoff** — PATCH `/v1/transactions/:id` from your backend after partner-side payment.
+6. **Webhooks & reconciliation** — see [Webhooks](../webhooks.md).
 
-- SDK package name and version
-- environment values for sandbox and production
-- session creation endpoint or backend contract
-- supported mobile platforms
-- callback event names and result payloads
-- production launch checklist
+Contact your JustGold onboarding team for sandbox credentials, bundle IDs, and production go-live approval.
 
 ## Next step
 
-Choose your platform guide: [React Native](sdk/react-native.md) or [Flutter](sdk/flutter.md).
+Choose your platform guide: [React Native](react-native.md) or [Flutter](flutter.md).

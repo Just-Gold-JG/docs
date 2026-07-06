@@ -1,50 +1,97 @@
 # Session Token
 
-Before initializing the JustGold SDK on a mobile device, your backend must request a short-lived session token for the customer. The mobile app passes this token to the SDK at launch — your `client_secret` never leaves your backend.
+Before rendering the JustGold SDK (`JustGoldWebView`), your mobile app needs a **short-lived session JWT** and optional **refresh token** from your backend. The app passes these to the SDK — your `client_secret` **never** leaves your server.
+
+> See also: [SDK Overview](overview.md) · [React Native](react-native.md) · [Flutter](flutter.md)
+
+---
+
+## Integration flow
+
+```mermaid
+sequenceDiagram
+    participant App as Partner app
+    participant Backend as Partner backend
+    participant JG as JustGold API
+    participant SDK as JustGoldWebView
+
+    App->>Backend: POST /api/justgold/session (your auth)
+    Backend->>JG: POST /v1/customers/{id}/token (HMAC)
+    JG-->>Backend: sessionToken + refreshToken
+    Backend-->>App: sessionToken + refreshToken
+    App->>SDK: token + refreshToken props
+    SDK->>JG: Bearer sessionToken (API calls)
+    SDK->>JG: POST /v1/customers/token/renew (silent renew)
+    SDK-->>App: onTokensRefreshed (new pair)
+```
+
+1. **Your backend** signs `POST /v1/customers/{customerIdentifier}/token` with HMAC.
+2. **Your app** calls your own session endpoint and receives `sessionToken` + `refreshToken`.
+3. **Your app** passes both to `JustGoldWebView` (`token` / `refreshToken` props).
+4. **The SDK** renews automatically ~60 seconds before the JWT expires when `refreshToken` is provided.
+
+---
+
+## Issue a session token (partner backend)
 
 ### Authentication
 
-This endpoint requires:
+Requires HMAC headers:
 
 - `X-Client-Id`
 - `X-Timestamp`
 - `X-Signature`
 
-See [Authentication](api/authentication.md) and [Request Signing](api/request-signing.md).
+See [Authentication](../api/authentication.md) and [Request Signing](../api/request-signing.md).
 
-## Request a session token
+Use **`@justgold/partner-sdk`** on Node.js 18+ to sign requests:
 
-#### Endpoint
+```ts
+import { signRequest } from '@justgold/partner-sdk';
+
+const customerIdentifier = 'your-user-id';
+const path = `/v1/customers/${encodeURIComponent(customerIdentifier)}/token`;
+const body = JSON.stringify({});
+
+const headers = signRequest({
+  method: 'POST',
+  path,
+  body,
+  clientId: process.env.JUSTGOLD_CLIENT_ID!,
+  secret: process.env.JUSTGOLD_CLIENT_SECRET!,
+});
+
+const res = await fetch(`${process.env.JUSTGOLD_API_BASE_URL}${path}`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json', ...headers },
+  body,
+});
+
+const { sessionToken, refreshToken } = await res.json();
+// Return both to your mobile app
+```
+
+### Endpoint
 
 ```http
 POST /v1/customers/:customerIdentifier/token
 ```
 
-#### Path parameters
-
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `customerIdentifier` | string | Yes | The partner-scoped customer identifier. If no customer exists with this identifier, one is created automatically. |
+| `customerIdentifier` | string | Yes | Partner-scoped customer ID. Created automatically if it does not exist. |
 
-#### Request body
-
-None.
+**Request body:** none.
 
 #### Sample request
 
 ```http
 POST /v1/customers/cust-10293/token
+Content-Type: application/json
 X-Client-Id: jg_partner_123
 X-Timestamp: 1767225600
 X-Signature: <hmac_signature>
 ```
-
-#### Response body
-
-| Field | Type | Description |
-| --- | --- | --- |
-| `sessionToken` | string | A signed JWT to pass to the SDK at initialization. Valid for **10 minutes**. |
-| `refreshToken` | string | An opaque token used to refresh the session before it expires. |
 
 #### Sample response
 
@@ -55,29 +102,150 @@ X-Signature: <hmac_signature>
 }
 ```
 
+| Field | Type | Description |
+| --- | --- | --- |
+| `sessionToken` | string | JWT for SDK API calls. Valid for **10 minutes**. |
+| `refreshToken` | string | Opaque token for silent session renewal. Valid for **4 hours** (see below). |
+
 #### Responses
 
 | Status | Meaning |
 | --- | --- |
-| `200 OK` | Token issued successfully. |
-| `401 Unauthorized` | HMAC signature is missing or invalid. |
-| `429 Too Many Requests` | Rate limit exceeded. Retry later. |
-| `500 Internal Server Error` | An unexpected error occurred. |
+| `200 OK` | Token issued successfully |
+| `401 Unauthorized` | HMAC signature missing or invalid |
+| `429 Too Many Requests` | Rate limit exceeded |
+| `500 Internal Server Error` | Unexpected server error |
+
+---
+
+## Renew a session token (SDK automatic)
+
+The SDK calls this endpoint **automatically** ~60 seconds before the JWT expires. Partners normally do **not** call it directly from the app.
+
+### Endpoint
+
+```http
+POST /v1/customers/token/renew
+```
+
+**Authentication:** none (HMAC not required). The `refreshToken` in the body is the credential.
+
+#### Request body
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `refreshToken` | string | Yes | Current refresh token |
+
+#### Sample request
+
+```http
+POST /v1/customers/token/renew
+Content-Type: application/json
+
+{
+  "refreshToken": "g1ZmVyZXNoX3Rva2VuX2V4YW1wbGU..."
+}
+```
+
+#### Sample response
+
+```json
+{
+  "sessionToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "new_rotated_refresh_token..."
+}
+```
+
+Each successful renew **rotates** the refresh token — the previous refresh token is invalidated. Implement `onTokensRefreshed` in your app and persist the new `refreshToken` if you store tokens between sessions.
+
+---
+
+## Revoke a refresh token (optional)
+
+Partners may call this from the backend to explicitly invalidate a refresh token (e.g. user logout). The SDK does **not** call this automatically when the WebView closes.
+
+```http
+POST /v1/customers/token/revoke
+Content-Type: application/json
+
+{
+  "refreshToken": "g1ZmVyZXNoX3Rva2VuX2V4YW1wbGU..."
+}
+```
+
+**Response:** `204 No Content`
+
+---
 
 ## Token lifetime
 
 | Token | Lifetime | Purpose |
 | --- | --- | --- |
-| `sessionToken` | 10 minutes | Passed to the SDK at initialization to start a customer session. |
-| `refreshToken` | — | Used by the SDK to refresh the session before the session token expires. |
+| `sessionToken` | **10 minutes** | Bearer JWT for authenticated SDK API calls |
+| `refreshToken` | **4 hours** (Redis TTL) | Silent renewal before JWT expiry |
 
-Request a fresh token each time the customer opens a JustGold flow. The SDK uses the refresh token automatically to extend the session — your backend only needs to supply a new pair when the customer re-opens the flow or the refresh token itself has expired.
+### Recommended partner behaviour
 
-The refresh token is revoked as soon as the SDK is closed. A new token pair must be requested on the next launch.
+| Scenario | Action |
+| --- | --- |
+| Customer opens JustGold flow | Request a fresh token pair from your backend |
+| SDK silent renew succeeds | Handle `onTokensRefreshed` — persist the **new** `refreshToken` |
+| `onSessionExpired` fires | Request a new token pair from your backend and update SDK props |
+| Customer leaves SDK / WebView destroyed | Tokens cleared from SDK memory. Request a new pair on next open |
+| User logs out of your app | Optionally call `POST /v1/customers/token/revoke` from your backend |
 
-## Usage
+---
 
-Pass the `sessionToken` to the SDK when initializing a customer session. Refer to the platform guide for the exact initialization call:
+## Pass tokens to the SDK
 
-- [React Native](sdk/react-native.md)
-- [Flutter](sdk/flutter.md)
+### React Native
+
+```tsx
+<JustGoldWebView
+  token={sessionToken}
+  refreshToken={refreshToken}
+  sandbox={false}
+  onSessionExpired={() => fetchNewSessionFromBackend()}
+  onTokensRefreshed={({ sessionToken, refreshToken }) =>
+    persistTokens(sessionToken, refreshToken)
+  }
+  // ...other callbacks
+/>
+```
+
+Full guide: [React Native integration](react-native.md)
+
+### Flutter
+
+```dart
+JustGoldWebView(
+  token: sessionToken,
+  refreshToken: refreshToken,
+  sandbox: false,
+  onSessionExpired: () => fetchNewSessionFromBackend(),
+  onTokensRefreshed: (payload) => persistTokens(payload),
+  // ...other callbacks
+)
+```
+
+Full guide: [Flutter integration](flutter.md)
+
+---
+
+## Security notes
+
+- **Never** embed `client_id` / `client_secret` in mobile app code.
+- Expose a **your-backend-only** session endpoint (e.g. `POST /api/justgold/session`) that returns tokens to authenticated users.
+- Match the **`sandbox`** flag on the SDK to the environment your HMAC credentials target:
+  - Sandbox API: `https://api.dev.partner.justgold.app`
+  - Production API: `https://api.partner.justgold.app`
+
+---
+
+## Related docs
+
+- [SDK Overview](overview.md)
+- [React Native integration](react-native.md)
+- [Flutter integration](flutter.md)
+- [Request Signing](../api/request-signing.md)
+- [Customers API](../api/customers.md)
