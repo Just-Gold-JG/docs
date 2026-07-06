@@ -13,7 +13,7 @@ sequenceDiagram
     participant App as Partner app
     participant Backend as Partner backend
     participant JG as JustGold API
-    participant SDK as JustGoldWebView
+    participant SDK as JustGoldConnect
 
     App->>Backend: POST /api/justgold/session (your auth)
     Backend->>JG: POST /v1/customers/{id}/token (HMAC)
@@ -27,7 +27,7 @@ sequenceDiagram
 
 1. **Your backend** signs `POST /v1/customers/{customerIdentifier}/token` with HMAC.
 2. **Your app** calls your own session endpoint and receives `sessionToken` + `refreshToken`.
-3. **Your app** passes both to `JustGoldWebView` (`token` / `refreshToken` props).
+3. **Your app** passes both to `JustGoldConnect` (`token` / `refreshToken` props).
 4. **The SDK** renews automatically ~60 seconds before the JWT expires when `refreshToken` is provided.
 
 ---
@@ -190,7 +190,6 @@ Content-Type: application/json
 | --- | --- |
 | Customer opens JustGold flow | Request a fresh token pair from your backend |
 | SDK silent renew succeeds | Tokens rotated internally — no action required |
-| `onSessionExpired` fires | Request a new token pair from your backend and update SDK props |
 | Customer leaves SDK / WebView destroyed | Tokens cleared from SDK memory. Request a new pair on next open |
 | User logs out of your app | Optionally call `POST /v1/customers/token/revoke` from your backend |
 
@@ -201,11 +200,10 @@ Content-Type: application/json
 ### React Native
 
 ```tsx
-<JustGoldWebView
+<JustGoldConnect
   token={sessionToken}
   refreshToken={refreshToken}
   sandbox={false}
-  onSessionExpired={() => fetchNewSessionFromBackend()}
   // ...other callbacks
 />
 ```
@@ -215,11 +213,10 @@ Full guide: [React Native integration](sdk/react-native.md)
 ### Flutter
 
 ```dart
-JustGoldWebView(
+JustGoldConnect(
   token: sessionToken,
   refreshToken: refreshToken,
   sandbox: false,
-  onSessionExpired: () => fetchNewSessionFromBackend(),
   // ...other callbacks
 )
 ```

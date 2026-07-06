@@ -20,7 +20,7 @@ Choose an SDK if you need:
 | Flutter | `justgold_sdk` | [pub.dev](https://pub.dev/packages/justgold_sdk) | Bundled inside the pub package |
 | Backend (all platforms) | `@justgold/partner-sdk` | [npm](https://www.npmjs.com/package/@justgold/partner-sdk) | Server-side HMAC signing only |
 
-Both mobile SDKs embed the same trading UI as a **WebView** (`JustGoldWebView`). Your app renders the component full-screen and handles callbacks — there is no separate `launch()` API.
+Both mobile SDKs embed the same trading UI as a **WebView** (`JustGoldConnect`). Your app renders the component full-screen and handles callbacks — there is no separate `launch()` API.
 
 **API environments:**
 
@@ -84,7 +84,7 @@ sequenceDiagram
     rect rgb(248, 250, 252)
         Note over Customer,JG: Quote and confirmation happen inside the SDK
         Customer->>Host: Open gold buy flow
-        Host->>SDK: Render SDK (JustGoldWebView)
+        Host->>SDK: Render SDK (JustGoldConnect)
         Customer->>SDK: Enter amount or quantity
         SDK->>JG: Get buy quote
         JG-->>SDK: Quote, price, quantity, fees, expiry
@@ -127,7 +127,7 @@ sequenceDiagram
     rect rgb(248, 250, 252)
         Note over Customer,JG: Quote and confirmation happen inside the SDK
         Customer->>Host: Open gold sell flow
-        Host->>SDK: Render SDK (JustGoldWebView)
+        Host->>SDK: Render SDK (JustGoldConnect)
         SDK->>JG: Get sell quote
         JG-->>SDK: Quote, price, quantity, fees, expiry
         SDK-->>Customer: Show sell quote summary
@@ -169,7 +169,7 @@ sequenceDiagram
     rect rgb(248, 250, 252)
         Note over Customer,JG: Cart checkout and quote preview happen inside the SDK
         Customer->>Host: Open delivery flow
-        Host->>SDK: Render SDK (JustGoldWebView)
+        Host->>SDK: Render SDK (JustGoldConnect)
         Customer->>SDK: Review cart and delivery address
         Customer->>SDK: Select redeem from vault option
         SDK->>JG: Preview delivery quote with cart and useVault
@@ -216,11 +216,9 @@ Host app  ──prop update / reply──▶  Native bridge  ──postMessage�
 | Event | Callback | Description |
 | --- | --- | --- |
 | `CLOSE` | `onClose` | User dismissed the SDK |
-| `SESSION_EXPIRED` | `onSessionExpired` | Token expired and silent renew failed |
-| `PAYMENT_REQUIRED` | `onPaymentRequest` | User confirmed a quote — host must collect payment |
+| `PAYMENT_REQUESTED` | `onPaymentRequest` | User confirmed a quote — host must collect payment |
 | `RESOLVE_PLATFORM_FEE` | `onResolvePlatformFee` | SDK requests a dynamic platform fee from the host |
-| `AUTH_REQUIRED` | `onAuthRequired` | Auth failed — host must re-issue a session |
-| `SUCCESS` | `onSuccess` | Transaction completed successfully |
+| `AUTH_EXPIRED` | `onAuthExpired` | Auth failed — host must re-issue a session |
 | `ERROR` | `onError` | Unrecoverable SDK error |
 
 ### Host → SDK messages
@@ -229,7 +227,7 @@ The host sends messages back to the SDK by calling methods on the SDK component 
 
 | Action | How | When to use |
 | --- | --- | --- |
-| Update session tokens | Update `token` / `refreshToken` props | After `onSessionExpired` or `onAuthRequired` |
+| Update session tokens | Update `token` / `refreshToken` props | After `onAuthExpired` |
 | Report payment result | Call `resume(result)` / post `PAYMENT_RESULT` | After partner-side payment completes |
 | Provide platform fee | Return value from `onResolvePlatformFee` | In response to `RESOLVE_PLATFORM_FEE` event |
 
@@ -260,7 +258,7 @@ The host sends messages back to the SDK by calling methods on the SDK component 
 1. **Backend session endpoint** — expose an app-facing route that returns `sessionToken` and `refreshToken`. See [Session Token](sdk/session-token.md).
 2. **HMAC credentials** — store `client_id` and `client_secret` on your backend only. Use `@justgold/partner-sdk` for signing.
 3. **Install the client package** — `@justgold/rn-sdk` or `justgold_sdk` ^1.0.0.
-4. **Implement callbacks** — at minimum: `onClose`, `onSessionExpired`, `onPaymentRequest`.
+4. **Implement callbacks** — at minimum: `onClose`, `onAuthExpired`, `onPaymentRequest`.
 5. **Payment handoff** — PATCH `/v1/transactions/:id` from your backend after partner-side payment.
 6. **Webhooks & reconciliation** — see [Webhooks](../webhooks.md).
 
