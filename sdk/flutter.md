@@ -222,7 +222,7 @@ onPaymentRequest: (payload, _) {
 // 3. Navigator.pop — SDK polls and shows the result
 ```
 
-### Pattern B — WebView remount
+### Pattern B — SDK remount
 
 If you **unmount** `JustGoldConnect` during payment, remount it with the **same** `token` and `refreshToken` after PATCH. The `justgold_sdk` wrapper caches the session and restores the payment route via `resumePaymentTransactionId` on the next `INIT_SESSION`. Do **not** re-fetch tokens unless the session expired.
 
@@ -234,7 +234,7 @@ The second callback argument posts `PAYMENT_RESULT` for instant navigation. **No
 
 ## 7. Platform requirements
 
-No extra iOS or Android WebView configuration is required for basic integration. The SDK loads its bundled UI via an internal custom URL scheme on both platforms (ES modules require a non-`file://` origin).
+No extra iOS or Android configuration is required for basic integration. The SDK loads its bundled UI via an internal custom URL scheme on both platforms (ES modules require a non-`file://` origin).
 
 | Platform | Requirement |
 | --- | --- |
@@ -264,7 +264,7 @@ Payment, KYC, and EFR flows outside the SDK use permissions your app declares se
 - [ ] Session tokens issued from your backend only — `client_secret` never in the app
 - [ ] `sandbox: false` for production builds
 - [ ] `SafeArea` or correct inset context around `JustGoldConnect`
-- [ ] WebView loads (not a blank screen)
+- [ ] SDK UI loads (not a blank screen)
 - [ ] Payment flow: `PAYMENT_REQUESTED` → PATCH transaction → close payment screen
 - [ ] Test completed, cancelled, and error paths
 - [ ] Confirm Android package ID and iOS bundle ID with JustGold onboarding
