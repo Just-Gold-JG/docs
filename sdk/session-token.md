@@ -1,6 +1,6 @@
 # Session Token
 
-Before rendering the JustGold SDK (`JustGoldWebView`), your mobile app needs a **short-lived session JWT** and optional **refresh token** from your backend. The app passes these to the SDK — your `client_secret` **never** leaves your server.
+Before rendering the JustGold SDK, your mobile app needs a **short-lived session JWT** and optional **refresh token** from your backend. The app passes these to the SDK — your `client_secret` **never** leaves your server.
 
 > See also: [SDK Overview](sdk/overview.md) · [React Native](sdk/react-native.md) · [Flutter](sdk/flutter.md)
 
@@ -22,7 +22,7 @@ sequenceDiagram
     App->>SDK: token + refreshToken props
     SDK->>JG: Bearer sessionToken (API calls)
     SDK->>JG: POST /v1/customers/token/renew (silent renew)
-    SDK-->>App: onTokensRefreshed (new pair)
+    SDK->>JG: (tokens rotated internally)
 ```
 
 1. **Your backend** signs `POST /v1/customers/{customerIdentifier}/token` with HMAC.
@@ -156,7 +156,7 @@ Content-Type: application/json
 }
 ```
 
-Each successful renew **rotates** the refresh token — the previous refresh token is invalidated. Implement `onTokensRefreshed` in your app and persist the new `refreshToken` if you store tokens between sessions.
+Each successful renew **rotates** the refresh token — the previous refresh token is invalidated. The SDK manages the new token pair internally.
 
 ---
 
@@ -189,7 +189,7 @@ Content-Type: application/json
 | Scenario | Action |
 | --- | --- |
 | Customer opens JustGold flow | Request a fresh token pair from your backend |
-| SDK silent renew succeeds | Handle `onTokensRefreshed` — persist the **new** `refreshToken` |
+| SDK silent renew succeeds | Tokens rotated internally — no action required |
 | `onSessionExpired` fires | Request a new token pair from your backend and update SDK props |
 | Customer leaves SDK / WebView destroyed | Tokens cleared from SDK memory. Request a new pair on next open |
 | User logs out of your app | Optionally call `POST /v1/customers/token/revoke` from your backend |
@@ -206,9 +206,6 @@ Content-Type: application/json
   refreshToken={refreshToken}
   sandbox={false}
   onSessionExpired={() => fetchNewSessionFromBackend()}
-  onTokensRefreshed={({ sessionToken, refreshToken }) =>
-    persistTokens(sessionToken, refreshToken)
-  }
   // ...other callbacks
 />
 ```
@@ -223,7 +220,6 @@ JustGoldWebView(
   refreshToken: refreshToken,
   sandbox: false,
   onSessionExpired: () => fetchNewSessionFromBackend(),
-  onTokensRefreshed: (payload) => persistTokens(payload),
   // ...other callbacks
 )
 ```

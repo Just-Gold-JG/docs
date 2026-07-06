@@ -10,11 +10,11 @@ Embed the JustGold gold & silver trading UI in your React Native app with **`@ju
 flowchart TD
     A[User opens gold feature] --> B[App calls your backend]
     B --> C[Backend returns sessionToken + refreshToken]
-    C --> D[Render JustGoldWebView]
+    C --> D[Render JustGold SDK]
     D --> E[SDK UI loads and calls JustGold API]
     E --> F{Callback}
     F -->|onClose| G[Dismiss SDK]
-    F -->|onPaymentRequired| H[Partner payment UI]
+    F -->|onPaymentRequest| H[Partner payment UI]
     F -->|onSuccess| I[Refresh app state]
     F -->|onSessionExpired| B
 ```
@@ -84,11 +84,8 @@ export function TradingScreen({ jwt, refreshToken, onDone }: Props) {
         theme={{ mode: 'light', primaryColor: '#2563eb' }}
         onClose={onDone}
         onSessionExpired={() => refreshSessionFromBackend()}
-        onTokensRefreshed={({ sessionToken, refreshToken: rt }) =>
-          persistTokens(sessionToken, rt)
-        }
         onSuccess={(txn) => console.log('complete', txn)}
-        onPaymentRequired={(payload) => {
+        onPaymentRequest={(payload) => {
           navigation.navigate('PartnerPayment', payload);
         }}
         onError={(err) => console.warn(err)}
@@ -123,11 +120,10 @@ Partners do **not** pass `apiBaseUrl` — the wrapper resolves it from the `sand
 | `onClose` | `() => void` | User closed the SDK |
 | `onSessionExpired` | `() => void` | Token expired — fetch a new session |
 | `onSuccess` | `(payload) => void` | Buy/sell transaction complete |
-| `onTokensRefreshed` | `(payload) => void` | Silent renew — persist new refresh token |
-| `onPaymentRequired` | `(payload, resume) => void` | Open partner payment UI — see below |
+| `onPaymentRequest` | `(payload, resume) => void` | Open partner payment UI — see below |
 | `onError` | `(payload) => void` | Unrecoverable SDK error |
 | `onLog` | `(payload) => void` | Optional structured SDK logs |
-| `onPlatformFeeRequest` | `(payload) => Promise<number \| null>` | Dynamic platform fee instead of `platformFee` |
+| `onResolvePlatformFee` | `(payload) => Promise<number>` | Async callback — return a dynamic platform fee instead of `platformFee` |
 | `sessionRenewDelayMs` | `number` | **Testing only** — omit in production |
 
 ---
@@ -138,9 +134,10 @@ Partners do **not** pass `apiBaseUrl` — the wrapper resolves it from the `sand
 | --- | --- | --- |
 | `onClose` | User taps close | Navigate back / dismiss SDK screen |
 | `onSessionExpired` | JWT expired and renew failed | Call your backend for a new token pair |
-| `onTokensRefreshed` | Silent renew succeeded | Persist new `refreshToken` if you store tokens |
 | `onSuccess` | Buy/sell confirmed | Refresh holdings or transaction history |
-| `onPaymentRequired` | User confirmed quote; payment is partner-side | Open payment UI → PATCH transaction status |
+| `onPaymentRequest` | User confirmed quote; payment is partner-side | Open payment UI → PATCH transaction status |
+| `onResolvePlatformFee` | SDK needs to resolve the platform fee dynamically | Return a `Promise<number>` with the fee amount |
+| `onAuthRequired` | Authentication failed or session cannot be renewed | Re-issue a fresh session from your backend |
 | `onError` | SDK error | Log and show a recoverable message |
 
 ---
@@ -160,7 +157,7 @@ See [Transactions](../api/transactions.md).
 Keep `JustGoldWebView` **mounted**. Push or present payment UI on top (modal, overlay, or new screen). The SDK polls transaction status every 2s on its internal pending screen.
 
 ```tsx
-onPaymentRequired={(payload) => navigation.navigate('PartnerPayment', payload)}
+onPaymentRequest={(payload) => navigation.navigate('PartnerPayment', payload)}
 
 // PartnerPayment screen:
 // 1. Collect payment (your PSP / wallet)
@@ -174,7 +171,7 @@ If you **must unmount** the WebView during payment (e.g. native PSP SDK), remoun
 
 ### Optional: `resume(transactionId)`
 
-The second argument to `onPaymentRequired` posts `PAYMENT_RESULT` to the WebView for instant navigation. **Not required** when using Pattern A or B.
+The second argument to `onPaymentRequest` posts `PAYMENT_RESULT` to the WebView for instant navigation. **Not required** when using Pattern A or B.
 
 ---
 
@@ -203,7 +200,7 @@ Your app must declare:
 
 | Platform | Permission | Reason |
 | --- | --- | --- |
-| Android | `INTERNET` | API calls (WebView → native HTTP bridge → JustGold API) |
+| Android | `INTERNET` | API calls (SDK → native HTTP bridge → JustGold API) |
 | iOS | — | Standard HTTPS under App Transport Security |
 
 Payment, KYC, and EFR flows outside the SDK use permissions your app declares separately.
@@ -216,7 +213,7 @@ Payment, KYC, and EFR flows outside the SDK use permissions your app declares se
 - [ ] `sandbox={false}` (or omit) for production builds
 - [ ] `SafeAreaProvider` wraps `JustGoldWebView`
 - [ ] WebView loads (not a blank screen)
-- [ ] `onSessionExpired` and `onTokensRefreshed` implemented
+- [ ] `onSessionExpired` implemented
 - [ ] Payment flow: `PAYMENT_REQUIRED` → PATCH transaction → close payment UI
 - [ ] Test completed, cancelled, and error paths
 - [ ] Confirm app bundle ID / package name with JustGold onboarding

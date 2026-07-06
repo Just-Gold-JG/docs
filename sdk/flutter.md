@@ -10,11 +10,11 @@ Embed the JustGold gold & silver trading UI in your Flutter app with **`justgold
 flowchart TD
     A[User opens gold feature] --> B[App calls your backend]
     B --> C[Backend returns sessionToken + refreshToken]
-    C --> D[Render JustGoldWebView]
+    C --> D[Render JustGold SDK]
     D --> E[SDK UI loads and calls JustGold API]
     E --> F{Callback}
     F -->|onClose| G[Dismiss SDK]
-    F -->|onPaymentRequired| H[Partner payment UI]
+    F -->|onPaymentRequest| H[Partner payment UI]
     F -->|onSuccess| I[Refresh app state]
     F -->|onSessionExpired| B
 ```
@@ -33,8 +33,6 @@ dependencies:
 ```bash
 flutter pub get
 ```
-
-The package includes the pre-built web UI under `assets/webview/`. No extra asset copy step is required.
 
 ---
 
@@ -88,9 +86,8 @@ class TradingPage extends StatelessWidget {
           ),
           onClose: () => Navigator.of(context).pop(),
           onSessionExpired: () => refreshSessionFromBackend(),
-          onTokensRefreshed: (payload) => persistTokens(payload),
           onSuccess: (payload) => debugPrint('Transaction: $payload'),
-          onPaymentRequired: (payload, _) {
+          onPaymentRequest: (payload, _) {
             Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => PartnerPaymentPage(payload: payload),
@@ -130,11 +127,10 @@ Partners do **not** pass `apiBaseUrl` — the wrapper resolves it from the `sand
 | `onClose` | `VoidCallback?` | User closed the SDK |
 | `onSessionExpired` | `VoidCallback?` | Token expired — fetch a new session |
 | `onSuccess` | `TransactionCallback?` | Buy/sell transaction complete |
-| `onTokensRefreshed` | `TokensRefreshedCallback?` | Silent renew — persist new refresh token |
-| `onPaymentRequired` | `PaymentRequiredCallback?` | Open partner payment UI — see below |
+| `onPaymentRequest` | `PaymentRequiredCallback?` | Open partner payment UI — see below |
 | `onError` | `ErrorCallback?` | Unrecoverable SDK error |
 | `onLog` | `LogCallback?` | Optional structured SDK logs |
-| `onPlatformFeeRequest` | `PlatformFeeRequestCallback?` | Dynamic platform fee |
+| `onResolvePlatformFee` | `Future<double> Function(dynamic)?` | Async callback — return a dynamic platform fee instead of `platformFee` |
 | `onAuthRequired` | `VoidCallback?` | Auth failed — re-issue session |
 | `onSdkEvent` | `SdkEventCallback?` | Raw bridge events for advanced integrations |
 
@@ -162,12 +158,11 @@ Logo URLs must be **HTTPS**.
 | --- | --- | --- |
 | `onClose` | User taps close | `Navigator.pop` or dismiss |
 | `onSessionExpired` | JWT expired and renew failed | Call your backend for a new token pair |
-| `onTokensRefreshed` | Silent renew succeeded | Persist new `refreshToken` if you store tokens |
 | `onSuccess` | Buy/sell confirmed | Refresh holdings or transaction history |
-| `onPaymentRequired` | User confirmed quote; payment is partner-side | Open payment UI → PATCH transaction status |
+| `onPaymentRequest` | User confirmed quote; payment is partner-side | Open payment UI → PATCH transaction status |
+| `onResolvePlatformFee` | SDK needs to resolve the platform fee dynamically | Return a `Future<double>` with the fee amount |
+| `onAuthRequired` | Authentication failed or session cannot be renewed | Re-issue a fresh session from your backend |
 | `onError` | SDK error | Log and show a recoverable message |
-
-Bridge events match React Native (`CLOSE`, `PAYMENT_REQUIRED`, `TOKENS_REFRESHED`, `SESSION_EXPIRED`, etc.).
 
 ---
 
@@ -186,7 +181,7 @@ See [Transactions](../api/transactions.md).
 Keep `JustGoldWebView` **mounted**. Push a full-screen payment route on top:
 
 ```dart
-onPaymentRequired: (payload, _) {
+onPaymentRequest: (payload, _) {
   Navigator.of(context).push(
     MaterialPageRoute(builder: (_) => PartnerPaymentPage(payload: payload)),
   );
@@ -239,7 +234,7 @@ Payment, KYC, and EFR flows outside the SDK use permissions your app declares se
 - [ ] `sandbox: false` for production builds
 - [ ] `SafeArea` or correct inset context around `JustGoldWebView`
 - [ ] WebView loads (not a blank screen)
-- [ ] `onSessionExpired` and `onTokensRefreshed` implemented
+- [ ] `onSessionExpired` implemented
 - [ ] Payment flow: `PAYMENT_REQUIRED` → PATCH transaction → close payment screen
 - [ ] Test completed, cancelled, and error paths
 - [ ] Confirm Android package ID and iOS bundle ID with JustGold onboarding

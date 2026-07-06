@@ -198,6 +198,49 @@ sequenceDiagram
     end
 ```
 
+## Host ↔ SDK communication
+
+The SDK and host app communicate through a structured message bridge. The SDK emits events; the host responds via callbacks or by updating props.
+
+### How it works
+
+The SDK runs inside a WebView and posts typed messages to the native layer. The native wrapper (`@justgold/rn-sdk` or `justgold_sdk`) deserialises these messages and invokes the corresponding callback you registered on the component.
+
+```
+SDK (WebView)  ──event──▶  Native bridge  ──callback──▶  Host app
+Host app  ──prop update / reply──▶  Native bridge  ──postMessage──▶  SDK (WebView)
+```
+
+### SDK → Host events
+
+| Event | Callback | Description |
+| --- | --- | --- |
+| `CLOSE` | `onClose` | User dismissed the SDK |
+| `SESSION_EXPIRED` | `onSessionExpired` | Token expired and silent renew failed |
+| `PAYMENT_REQUIRED` | `onPaymentRequest` | User confirmed a quote — host must collect payment |
+| `RESOLVE_PLATFORM_FEE` | `onResolvePlatformFee` | SDK requests a dynamic platform fee from the host |
+| `AUTH_REQUIRED` | `onAuthRequired` | Auth failed — host must re-issue a session |
+| `SUCCESS` | `onSuccess` | Transaction completed successfully |
+| `ERROR` | `onError` | Unrecoverable SDK error |
+
+### Host → SDK messages
+
+The host sends messages back to the SDK by calling methods on the SDK component ref or by updating its props:
+
+| Action | How | When to use |
+| --- | --- | --- |
+| Update session tokens | Update `token` / `refreshToken` props | After `onSessionExpired` or `onAuthRequired` |
+| Report payment result | Call `resume(result)` / post `PAYMENT_RESULT` | After partner-side payment completes |
+| Provide platform fee | Return value from `onResolvePlatformFee` | In response to `RESOLVE_PLATFORM_FEE` event |
+
+### Callback execution model
+
+- Callbacks are invoked on the **JS thread** (React Native) or **main isolate** (Flutter).
+- `onResolvePlatformFee` is the only async callback — the SDK awaits your returned value before proceeding.
+- All other callbacks are fire-and-forget from the SDK's perspective; the host drives next steps by updating props or calling reply methods.
+
+---
+
 ## SDK responsibilities
 
 | Area          | Partner app                     | Partner backend                        | JustGold SDK                            |
@@ -217,7 +260,7 @@ sequenceDiagram
 1. **Backend session endpoint** — expose an app-facing route that returns `sessionToken` and `refreshToken`. See [Session Token](sdk/session-token.md).
 2. **HMAC credentials** — store `client_id` and `client_secret` on your backend only. Use `@justgold/partner-sdk` for signing.
 3. **Install the client package** — `@justgold/rn-sdk` or `justgold_sdk` ^1.0.0.
-4. **Implement callbacks** — at minimum: `onClose`, `onSessionExpired`, `onPaymentRequired`, `onTokensRefreshed`.
+4. **Implement callbacks** — at minimum: `onClose`, `onSessionExpired`, `onPaymentRequest`.
 5. **Payment handoff** — PATCH `/v1/transactions/:id` from your backend after partner-side payment.
 6. **Webhooks & reconciliation** — see [Webhooks](../webhooks.md).
 
