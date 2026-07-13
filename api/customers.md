@@ -512,6 +512,80 @@ This endpoint accepts either:
 
 ---
 
+## Generate invoice
+
+Generates an invoice for a completed transaction and delivers it to the provided contact details.
+
+#### Endpoint
+
+```http
+POST /v1/customers/:customerIdentifier/transactions/:transactionId/invoice
+```
+
+#### Authentication
+
+This endpoint requires:
+
+- `X-Client-Id`
+- `X-Timestamp`
+- `X-Signature`
+
+See [Authentication](api/authentication.md) and [Request Signing](api/request-signing.md).
+
+#### Path parameters
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `customerIdentifier` | string | Yes | Partner-scoped customer identifier. |
+| `transactionId` | string | Yes | Transaction identifier for which the invoice is generated. |
+
+#### Request body
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `firstName` | string | Yes | Recipient first name, printed on the invoice. |
+| `lastName` | string | Yes | Recipient last name, printed on the invoice. |
+| `email` | string | Yes | Email address the invoice is sent to. |
+| `phone` | object | Yes | Recipient phone details. |
+| `phone.countryCode` | string | Yes | Phone country code (e.g. `+971`). |
+| `phone.number` | string | Yes | Phone number without country code. |
+
+#### Sample request
+
+```json
+{
+  "firstName": "Aarav",
+  "lastName": "Mehta",
+  "email": "aarav@example.com",
+  "phone": {
+    "countryCode": "+971",
+    "number": "501234567"
+  }
+}
+```
+
+#### Response
+
+On success, the response body is the invoice as a **PDF file**.
+
+| Header | Value |
+| --- | --- |
+| `Content-Type` | `application/pdf` |
+| `Content-Disposition` | `attachment; filename="invoice-{transactionId}.pdf"` |
+
+Read the response body as a binary stream and save or forward it directly.
+
+#### Responses
+
+| Status | Meaning |
+| --- | --- |
+| `201 Created` | Invoice generated successfully. Response body is the PDF binary. |
+| `404 Not Found` | No transaction found for the given `customerIdentifier` and `transactionId` combination. |
+| `429 Too Many Requests` | Rate limit exceeded. Retry later. |
+| `500 Internal Server Error` | An unexpected error occurred on the JustGold side. |
+
+---
+
 ## Get customer cart
 
 Returns the customer's cart with full product details and quantities.
