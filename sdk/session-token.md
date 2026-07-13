@@ -162,7 +162,7 @@ Each successful renew **rotates** the refresh token — the previous refresh tok
 
 ## Revoke a refresh token (optional)
 
-Partners may call this from the backend to explicitly invalidate a refresh token (e.g. user logout). The SDK does **not** call this automatically when the WebView closes.
+Partners may call this from the backend to explicitly invalidate a refresh token (e.g. user logout). The SDK does **not** call this automatically when the SDK closes.
 
 ```http
 POST /v1/customers/token/revoke
@@ -190,7 +190,7 @@ Content-Type: application/json
 | --- | --- |
 | Customer opens JustGold flow | Request a fresh token pair from your backend |
 | SDK silent renew succeeds | Tokens rotated internally — no action required |
-| Customer leaves SDK / WebView destroyed | Tokens cleared from SDK memory. Request a new pair on next open |
+| Customer leaves SDK / SDK closed | Tokens cleared from SDK memory. Request a new pair on next open |
 | User logs out of your app | Optionally call `POST /v1/customers/token/revoke` from your backend |
 
 ---

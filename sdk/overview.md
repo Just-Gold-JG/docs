@@ -20,7 +20,7 @@ Choose an SDK if you need:
 | Flutter | `justgold_sdk` | [pub.dev](https://pub.dev/packages/justgold_sdk) | Bundled inside the pub package |
 | Backend (all platforms) | `@justgold/partner-sdk` | [npm](https://www.npmjs.com/package/@justgold/partner-sdk) | Server-side HMAC signing only |
 
-Both mobile SDKs embed the same trading UI as a **WebView** (`JustGoldConnect`). Your app renders the component full-screen and handles callbacks — there is no separate `launch()` API.
+Both mobile SDKs embed the same trading UI via **`JustGoldConnect`**. Your app renders the component full-screen and handles callbacks — there is no separate `launch()` API.
 
 **API environments:**
 
@@ -204,11 +204,11 @@ The SDK and host app communicate through a structured message bridge. The SDK em
 
 ### How it works
 
-The SDK runs inside a WebView and posts typed messages to the native layer. The native wrapper (`@justgold/rn-sdk` or `justgold_sdk`) deserialises these messages and invokes the corresponding callback you registered on the component.
+The SDK posts typed messages to the native layer through the platform wrapper. `@justgold/rn-sdk` and `justgold_sdk` deserialise these messages and invoke the corresponding callback you registered on `JustGoldConnect`.
 
 ```
-SDK (WebView)  ──event──▶  Native bridge  ──callback──▶  Host app
-Host app  ──prop update / reply──▶  Native bridge  ──postMessage──▶  SDK (WebView)
+SDK UI  ──event──▶  Native bridge  ──callback──▶  Host app
+Host app  ──prop update / reply──▶  Native bridge  ──postMessage──▶  SDK UI
 ```
 
 ### SDK → Host events

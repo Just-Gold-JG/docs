@@ -166,7 +166,7 @@ PATCH /v1/transactions/:transactionId
 
 See [Transactions](../api/transactions.md).
 
-### Pattern A — Overlay (recommended)
+### Recommended flow
 
 Keep `JustGoldConnect` **mounted**. Push or present payment UI on top (modal, overlay, or new screen). The SDK polls transaction status every 2s on its internal pending screen.
 
@@ -179,19 +179,19 @@ onPaymentRequest={(transaction) => navigation.navigate('PartnerPayment', transac
 // 3. navigation.goBack() — SDK shows success/failure automatically
 ```
 
-### Pattern B — WebView remount
+### Unmounting during payment
 
-If you **must unmount** the WebView during payment (e.g. native PSP SDK), remount `JustGoldConnect` with the **same** `token` and `refreshToken` after PATCH. The `@justgold/rn-sdk` wrapper caches the session and restores the payment route automatically. Do **not** re-fetch tokens unless the session expired.
+If you **must unmount** `JustGoldConnect` during payment (e.g. native PSP SDK), remount it with the **same** `token` and `refreshToken` after PATCH. The `@justgold/rn-sdk` wrapper caches the session and restores the payment route automatically. Do **not** re-fetch tokens unless the session expired.
 
 ### Optional: `resume(transactionId)`
 
-The second argument to `onPaymentRequest` posts `PAYMENT_RESULT` to the WebView for instant navigation. **Not required** when using Pattern A or B.
+The second argument to `onPaymentRequest` posts `PAYMENT_RESULT` to the SDK for instant navigation. **Not required** for the recommended overlay flow or when remounting with the same session tokens.
 
 ---
 
 ## 7. Metro configuration
 
-Metro must treat `.html` as an asset so the bundled WebView loads correctly. Add to your `metro.config.js`:
+Metro must treat `.html` as an asset so the bundled UI loads correctly. Add to your `metro.config.js`:
 
 ```js
 const { getDefaultConfig } = require('@react-native/metro-config');
@@ -202,7 +202,7 @@ config.resolver.assetExts.push('html');
 module.exports = config;
 ```
 
-If you consume `@justgold/rn-sdk` from a monorepo workspace, also configure `watchFolders` and `nodeModulesPaths` so Metro resolves the package and its `assets/webview/` folder.
+If you consume `@justgold/rn-sdk` from a monorepo workspace, also configure `watchFolders` and `nodeModulesPaths` so Metro resolves the package and its bundled UI assets.
 
 ---
 
@@ -226,7 +226,7 @@ Payment, KYC, and EFR flows outside the SDK use permissions your app declares se
 - [ ] Session tokens issued from your backend only — `client_secret` never in the app
 - [ ] `sandbox={false}` (or omit) for production builds
 - [ ] `SafeAreaProvider` wraps `JustGoldConnect`
-- [ ] WebView loads (not a blank screen)
+- [ ] SDK UI loads (not a blank screen)
 - [ ] Payment flow: `PAYMENT_REQUESTED` → PATCH transaction → close payment UI
 - [ ] Test completed, cancelled, and error paths
 - [ ] Confirm app bundle ID / package name with JustGold onboarding
