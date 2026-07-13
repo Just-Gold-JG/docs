@@ -545,10 +545,10 @@ See [Authentication](api/authentication.md) and [Request Signing](api/request-si
 | --- | --- | --- | --- |
 | `firstName` | string | Yes | Recipient first name, printed on the invoice. |
 | `lastName` | string | Yes | Recipient last name, printed on the invoice. |
-| `email` | string | Yes | Email address the invoice is sent to. |
-| `phone` | object | Yes | Recipient phone details. |
-| `phone.countryCode` | string | Yes | Phone country code (e.g. `+971`). |
-| `phone.number` | string | Yes | Phone number without country code. |
+| `email` | string | No | Email address the invoice is sent to. |
+| `phone` | object | No | Recipient phone details. |
+| `phone.countryCode` | string | Yes, if `phone` is provided | Phone country code (e.g. `+971`). |
+| `phone.number` | string | Yes, if `phone` is provided | Phone number without country code. |
 
 #### Sample request
 
