@@ -103,6 +103,7 @@ POST /v1/sell
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `quoteId` | string | Yes | Quote identifier returned by the sell preview endpoint. Must be a UUID. |
+| `status` | string | No | Initial transaction status. One of `Pending`, `Completed`, `Failed`, `Cancelled`. Defaults to `Pending`. |
 | `subOrgCode` | string | No | Sub-organization code to attribute the transaction to, if your organization has sub-organizations. If omitted, the quote's root organization is used. |
 | `paymentReference` | string | No | Reference identifier for the customer's payment (e.g. payment gateway transaction ID). |
 | `paymentMethod` | string | No | Payment method used by the customer (e.g. `Card`, `BankTransfer`, `Cash`). |
@@ -112,6 +113,7 @@ POST /v1/sell
 ```json
 {
   "quoteId": "b79a7bb2-0fd3-4dd4-a56c-7165fb1a7b55",
+  "status": "Completed",
   "paymentReference": "pay_3f8a9c1b2d",
   "paymentMethod": "Card"
 }
