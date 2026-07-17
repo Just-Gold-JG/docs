@@ -586,6 +586,55 @@ Read the response body as a binary stream and save or forward it directly.
 
 ---
 
+## Download invoice
+
+Downloads a previously generated invoice for a transaction as a PDF file.
+
+#### Endpoint
+
+```http
+GET /v1/customers/:customerIdentifier/transactions/:transactionId/invoice
+```
+
+#### Authentication
+
+This endpoint requires:
+
+- `X-Client-Id`
+- `X-Timestamp`
+- `X-Signature`
+
+See [Authentication](api/authentication.md) and [Request Signing](api/request-signing.md).
+
+#### Path parameters
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `customerIdentifier` | string | Yes | Partner-scoped customer identifier. |
+| `transactionId` | string | Yes | Transaction identifier of the invoice to download. |
+
+#### Response
+
+On success, the response body is the invoice as a **PDF file**.
+
+| Header | Value |
+| --- | --- |
+| `Content-Type` | `application/pdf` |
+| `Content-Disposition` | `attachment; filename="invoice-{transactionId}.pdf"` |
+
+Read the response body as a binary stream and save or forward it directly.
+
+#### Responses
+
+| Status | Meaning |
+| --- | --- |
+| `200 OK` | Invoice downloaded successfully. Response body is the PDF binary. |
+| `404 Not Found` | No invoice found for the given `customerIdentifier` and `transactionId` combination. |
+| `429 Too Many Requests` | Rate limit exceeded. Retry later. |
+| `500 Internal Server Error` | An unexpected error occurred on the JustGold side. |
+
+---
+
 ## Get customer cart
 
 Returns the customer's cart with full product details and quantities.
