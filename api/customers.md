@@ -564,22 +564,25 @@ See [Authentication](api/authentication.md) and [Request Signing](api/request-si
 }
 ```
 
-#### Response
+#### Response body
 
-On success, the response body is the invoice as a **PDF file**.
+| Field | Type | Description |
+| --- | --- | --- |
+| `url` | string | Pre-signed URL to download the invoice PDF. Valid for a short period — download promptly after receiving. |
 
-| Header | Value |
-| --- | --- |
-| `Content-Type` | `application/pdf` |
-| `Content-Disposition` | `attachment; filename="invoice-{transactionId}.pdf"` |
+#### Sample response
 
-Read the response body as a binary stream and save or forward it directly.
+```json
+{
+  "url": "https://storage.example.com/invoices/invoice-682710cc3f1b2c7a9d5e2222.pdf?X-Amz-Signature=..."
+}
+```
 
 #### Responses
 
 | Status | Meaning |
 | --- | --- |
-| `201 Created` | Invoice generated successfully. Response body is the PDF binary. |
+| `201 Created` | Invoice generated successfully. |
 | `404 Not Found` | No transaction found for the given `customerIdentifier` and `transactionId` combination. |
 | `429 Too Many Requests` | Rate limit exceeded. Retry later. |
 | `500 Internal Server Error` | An unexpected error occurred on the JustGold side. |
@@ -588,7 +591,7 @@ Read the response body as a binary stream and save or forward it directly.
 
 ## Download invoice
 
-Downloads a previously generated invoice for a transaction as a PDF file.
+Returns a pre-signed URL to download a previously generated invoice for a transaction.
 
 #### Endpoint
 
@@ -613,22 +616,25 @@ See [Authentication](api/authentication.md) and [Request Signing](api/request-si
 | `customerIdentifier` | string | Yes | Partner-scoped customer identifier. |
 | `transactionId` | string | Yes | Transaction identifier of the invoice to download. |
 
-#### Response
+#### Response body
 
-On success, the response body is the invoice as a **PDF file**.
+| Field | Type | Description |
+| --- | --- | --- |
+| `url` | string | Pre-signed URL to download the invoice PDF. Valid for a short period — download promptly after receiving. |
 
-| Header | Value |
-| --- | --- |
-| `Content-Type` | `application/pdf` |
-| `Content-Disposition` | `attachment; filename="invoice-{transactionId}.pdf"` |
+#### Sample response
 
-Read the response body as a binary stream and save or forward it directly.
+```json
+{
+  "url": "https://storage.example.com/invoices/invoice-682710cc3f1b2c7a9d5e2222.pdf?X-Amz-Signature=..."
+}
+```
 
 #### Responses
 
 | Status | Meaning |
 | --- | --- |
-| `200 OK` | Invoice downloaded successfully. Response body is the PDF binary. |
+| `200 OK` | Pre-signed URL returned successfully. |
 | `404 Not Found` | No invoice found for the given `customerIdentifier` and `transactionId` combination. |
 | `429 Too Many Requests` | Rate limit exceeded. Retry later. |
 | `500 Internal Server Error` | An unexpected error occurred on the JustGold side. |
