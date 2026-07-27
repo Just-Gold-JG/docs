@@ -275,6 +275,7 @@ Payment, KYC, and EFR flows outside the SDK use permissions your app declares se
 ## Related docs
 
 - [SDK Overview](sdk/overview.md)
+- [Bridge events & payloads](sdk/bridge-events.md) — all events with JSON examples
 - [Session Token](sdk/session-token.md)
 - [React Native integration](sdk/react-native.md)
 - [Portal Access](../portal-access.md)
