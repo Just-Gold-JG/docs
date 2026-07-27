@@ -20,6 +20,7 @@
 * SDK Integration
   * [Overview](sdk/overview)
   * [Session Token](sdk/session-token)
+  * [Bridge events & payloads](sdk/bridge-events)
   * [React Native](sdk/react-native)
   * [Flutter](sdk/flutter)
 * [Errors](errors)

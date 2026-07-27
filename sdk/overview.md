@@ -213,29 +213,36 @@ Host app  ──prop update / reply──▶  Native bridge  ──postMessage�
 
 ### SDK → Host events
 
-| Event | Callback | Description |
+| Event | Callback | Required? |
 | --- | --- | --- |
-| `CLOSE` | `onClose` | User dismissed the SDK |
-| `PAYMENT_REQUESTED` | `onPaymentRequest` | User confirmed a quote — host must collect payment |
-| `RESOLVE_PLATFORM_FEE` | `onResolvePlatformFee` | SDK requests a dynamic platform fee from the host |
-| `AUTH_EXPIRED` | `onAuthExpired` | Auth failed — host must re-issue a session |
-| `ERROR` | `onError` | Unrecoverable SDK error |
+| `PAYMENT_REQUIRED` | `onPaymentRequired` | **Yes** — collect payment, PATCH via backend |
+| `SESSION_EXPIRED` | `onSessionExpired` | **Yes** — re-issue session |
+| `AUTH_REQUIRED` | `onAuthRequired` | **Yes** — same as session expired |
+| `TOKENS_REFRESHED` | `onTokensRefreshed` | **Recommended** — persist new refresh token |
+| `CLOSE` | `onClose` | **Yes** — dismiss SDK screen |
+| `PLATFORM_FEE_REQUEST` | `onPlatformFeeRequest` | If dynamic platform fee |
+| `TRANSACTION_COMPLETE` | `onSuccess` | Optional |
+| `ERROR` | `onError` | Recommended |
+
+Use `onSdkEvent` (Flutter) or equivalent analytics hooks to receive optional events such as `QUOTE_PREVIEWED`, `TRANSACTION_CONFIRMED`, `NAVIGATION`, and `DELIVERY_COMPLETE`.
+
+See **[Bridge events & payloads](sdk/bridge-events.md)** for every event with JSON examples and a full Flutter integration sample.
 
 ### Host → SDK messages
 
-The host sends messages back to the SDK by calling methods on the SDK component ref or by updating its props:
+The host sends messages back via props or wrapper methods (most are handled automatically):
 
 | Action | How | When to use |
 | --- | --- | --- |
-| Update session tokens | Update `token` / `refreshToken` props | After `onAuthExpired` |
-| Report payment result | Call `resume(result)` / post `PAYMENT_RESULT` | After partner-side payment completes |
-| Provide platform fee | Return value from `onResolvePlatformFee` | In response to `RESOLVE_PLATFORM_FEE` event |
+| Update session tokens | Update `token` / `refreshToken` props | After `onSessionExpired` / `onAuthRequired` |
+| Report payment result | `resume(transactionId)` in `onPaymentRequired` | Optional fast-path after payment (polling works if SDK stays mounted) |
+| Provide platform fee | Return value from `onPlatformFeeRequest` | In response to `PLATFORM_FEE_REQUEST` |
 
 ### Callback execution model
 
-- Callbacks are invoked on the **JS thread** (React Native) or **main isolate** (Flutter).
-- `onResolvePlatformFee` is the only async callback — the SDK awaits your returned value before proceeding.
-- All other callbacks are fire-and-forget from the SDK's perspective; the host drives next steps by updating props or calling reply methods.
+- Callbacks run on the **JS thread** (React Native) or **main isolate** (Flutter).
+- `onPlatformFeeRequest` is async — the SDK awaits your returned fee before continuing.
+- All other callbacks are fire-and-forget; the host drives next steps by updating props or calling `resume`.
 
 ---
 
@@ -250,6 +257,7 @@ The host sends messages back to the SDK by calling methods on the SDK component 
 
 ## Platform guides
 
+- [Bridge events & payloads](sdk/bridge-events.md) — all events, JSON payloads, Flutter sample code
 - [React Native integration](sdk/react-native.md)
 - [Flutter integration](sdk/flutter.md)
 
@@ -258,7 +266,7 @@ The host sends messages back to the SDK by calling methods on the SDK component 
 1. **Backend session endpoint** — expose an app-facing route that returns `sessionToken` and `refreshToken`. See [Session Token](sdk/session-token.md).
 2. **HMAC credentials** — store `client_id` and `client_secret` on your backend only. Use `@justgold/partner-sdk` for signing.
 3. **Install the client package** — `@justgold/rn-sdk` or `justgold_sdk` ^1.0.0.
-4. **Implement callbacks** — at minimum: `onClose`, `onAuthExpired`, `onPaymentRequest`.
+4. **Implement callbacks** — at minimum: `onClose`, `onSessionExpired` (or `onAuthRequired`), `onPaymentRequired`. See [Bridge events & payloads](sdk/bridge-events.md).
 5. **Payment handoff** — PATCH `/v1/transactions/:id` from your backend after partner-side payment.
 6. **Webhooks & reconciliation** — see [Webhooks](../webhooks.md).
 
