@@ -47,6 +47,7 @@ See [Authentication](api/authentication.md) and [Request Signing](api/request-si
 | `paymentReference` | string | Reference identifier for the customer's payment, when set. |
 | `paymentMethod` | string | Payment method used by the customer, when set. |
 | `settlement` | object | Settlement breakdown, when available. See below. |
+| `deliveryInfo` | object | Delivery tracking details. Present on `Delivery` transactions only, once JustGold begins fulfilling the delivery. See below. |
 | `createdAt` | string | Transaction creation timestamp. |
 | `updatedAt` | string | Transaction last update timestamp. |
 
@@ -79,6 +80,28 @@ See [Authentication](api/authentication.md) and [Request Signing](api/request-si
 | `totalPartner` | string | Total amount due to the partner. |
 | `settlementStatus` | string | `Pending` or `Settled`. |
 | `settlementDate` | string | Date settlement was processed, when set. |
+
+##### `deliveryInfo` object
+
+Present on `Delivery` transactions only. It is not set when the delivery transaction is created — JustGold populates and updates it as the delivery is fulfilled. Individual fields are `null` until set. Poll [`GET /v1/transactions/:transactionId`](api/transactions.md) to track delivery progress.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `status` | string | Current delivery stage. One of `Placed`, `Confirmed`, `OutForDelivery`, `Delivered`, `Failed`, or `Returned`. |
+| `deliveredDate` | string | ISO 8601 timestamp of when the order was delivered. Set once `status` is `Delivered`. |
+| `nationalIdImageUrl` | string | Reference to the recipient's national ID image captured as proof of delivery. |
+| `notes` | string | Free-text delivery notes recorded by JustGold. |
+
+When populated, `deliveryInfo` looks like:
+
+```json
+"deliveryInfo": {
+  "status": "Delivered",
+  "deliveredDate": "2026-06-02T11:20:00.000Z",
+  "nationalIdImageUrl": "delivery-docs/682710cc3f1b2c7a9d5e4444/national-id.jpg",
+  "notes": "Delivered to recipient in person"
+}
+```
 
 #### Sample response
 
@@ -208,6 +231,7 @@ See [Authentication](api/authentication.md) and [Request Signing](api/request-si
 | `notes` | string | Notes stored with the transaction, when set. |
 | `paymentReference` | string | Reference identifier for the customer's payment, when set. |
 | `paymentMethod` | string | Payment method used by the customer, when set. |
+| `deliveryInfo` | object | Delivery tracking details. Present on `Delivery` transactions only. See [Get transaction](api/transactions.md) for the field breakdown. |
 | `createdAt` | string | Transaction creation timestamp. |
 | `updatedAt` | string | Transaction last update timestamp. |
 
