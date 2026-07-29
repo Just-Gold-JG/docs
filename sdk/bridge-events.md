@@ -1,4 +1,4 @@
-# Bridge events & payloads
+# Bridge reference
 
 All platforms use the same JSON message envelope. Platform wrappers (`justgold_sdk`, `@justgold/rn-sdk`, `@justgold/web-sdk`) translate bridge messages into typed callbacks — partners normally implement **callbacks**, not raw `postMessage`.
 
@@ -14,7 +14,7 @@ Some host → SDK messages omit `payload` (e.g. `PAYMENT_RESULT` uses top-level 
 
 ### Host → SDK (you send — wrappers send most of these automatically)
 
-| Event                   | Partner action?                                  | Flutter / wrapper                              |
+| Event                   | Partner action?                                  | React Native / Flutter wrapper                 |
 | ----------------------- | ------------------------------------------------ | ---------------------------------------------- |
 | `INIT_SESSION`          | Pass props — wrapper sends                       | Automatic on load                              |
 | `PAYMENT_RESULT`        | Optional fast-path after payment                 | `resume(transactionId)` in `onPaymentRequired` |
@@ -24,27 +24,82 @@ Some host → SDK messages omit `payload` (e.g. `PAYMENT_RESULT` uses top-level 
 
 ### SDK → Host (you receive — implement callbacks)
 
-| Event                   | Flutter callback                           | Required?                               |
-| ----------------------- | ------------------------------------------ | --------------------------------------- |
-| `WEBVIEW_READY`         | — (wrapper handles)                        | —                                       |
-| `SESSION_STARTED`       | `onSdkEvent`                               | Optional analytics                      |
-| `AUTH_REQUIRED`         | `onAuthRequired`                           | **Yes** (re-issue session)              |
-| `SESSION_EXPIRED`       | `onSessionExpired`                         | **Yes**                                 |
-| `TOKENS_REFRESHED`      | `onTokensRefreshed`                        | **Recommended** (persist refresh token) |
-| `LOG`                   | `onLog`                                    | Optional                                |
-| `PLATFORM_FEE_REQUEST`  | `onPlatformFeeRequest`                     | If dynamic fee                          |
-| `QUOTE_PREVIEWED`       | `onSdkEvent` / `onQuotePreviewed` (RN/Web) | Optional                                |
-| `TRANSACTION_CONFIRMED` | `onSdkEvent` / `onTransactionConfirmed`    | Optional                                |
-| `NAVIGATION`            | `onSdkEvent` / `onNavigation`              | Optional analytics                      |
-| `PAYMENT_REQUIRED`      | `onPaymentRequired`                        | **Yes** (payment flow)                  |
-| `PAYMENT_PENDING_CLEAR` | — (wrapper internal)                       | —                                       |
-| `PAYMENT_DISMISSED`     | — (wrapper internal)                       | —                                       |
-| `TRANSACTION_COMPLETE`  | `onSuccess`                                | Optional                                |
-| `DELIVERY_COMPLETE`     | `onSdkEvent` / `onDeliveryComplete`        | Optional                                |
-| `CLOSE`                 | `onClose`                                  | **Yes**                                 |
-| `ERROR`                 | `onError`                                  | Recommended                             |
+| Event                   | React Native callback                      | Flutter callback                           | Required?                               |
+| ----------------------- | ------------------------------------------ | ------------------------------------------ | --------------------------------------- |
+| `WEBVIEW_READY`         | — (wrapper handles)                        | — (wrapper handles)                        | —                                       |
+| `SESSION_STARTED`       | `onSdkEvent`                               | `onSdkEvent`                               | Optional analytics                      |
+| `AUTH_REQUIRED`         | `onAuthRequired`                           | `onAuthRequired`                           | **Yes** (re-issue session)              |
+| `SESSION_EXPIRED`       | `onSessionExpired`                         | `onSessionExpired`                         | **Yes**                                 |
+| `TOKENS_REFRESHED`      | `onTokensRefreshed`                        | `onTokensRefreshed`                        | **Recommended** (persist refresh token) |
+| `LOG`                   | `onLog`                                    | `onLog`                                    | Optional                                |
+| `PLATFORM_FEE_REQUEST`  | `onPlatformFeeRequest`                     | `onPlatformFeeRequest`                     | If dynamic fee                          |
+| `QUOTE_PREVIEWED`       | `onQuotePreviewed` / `onSdkEvent`          | `onSdkEvent`                               | Optional                                |
+| `TRANSACTION_CONFIRMED` | `onTransactionConfirmed` / `onSdkEvent`    | `onSdkEvent`                               | Optional                                |
+| `NAVIGATION`            | `onNavigation` / `onSdkEvent`              | `onSdkEvent`                               | Optional analytics                      |
+| `PAYMENT_REQUIRED`      | `onPaymentRequired`                        | `onPaymentRequired`                        | **Yes** (payment flow)                  |
+| `PAYMENT_PENDING_CLEAR` | — (wrapper internal)                       | — (wrapper internal)                       | —                                       |
+| `PAYMENT_DISMISSED`     | — (wrapper internal)                       | — (wrapper internal)                       | —                                       |
+| `TRANSACTION_COMPLETE`  | `onSuccess`                                | `onSuccess`                                | Optional                                |
+| `DELIVERY_COMPLETE`     | `onDeliveryComplete` / `onSdkEvent`        | `onSdkEvent`                               | Optional                                |
+| `CLOSE`                 | `onClose`                                  | `onClose`                                  | **Yes**                                 |
+| `ERROR`                 | `onError`                                  | `onError`                                  | Recommended                             |
 
-> **Catch-all:** `onSdkEvent` (Flutter) receives **every** outbound event as a `Map` if you prefer one handler.
+> **Catch-all:** `onSdkEvent` receives **every** outbound event (typed on RN, `Map` on Flutter) if you prefer one handler.
+
+### Per-event handler quick reference (React Native)
+
+Every SDK → host event below includes a **JSON payload example** in this document. Map them to `@justgold/rn-sdk` props:
+
+```tsx
+<JustGoldConnect
+  token={token}
+  refreshToken={refreshToken}
+  sandbox
+  onClose={() => navigation.goBack()}
+  onSessionExpired={reissueSession}
+  onAuthRequired={() => reissueSession()}
+  onTokensRefreshed={({ sessionToken, refreshToken: rt }) => persistTokens(sessionToken, rt)}
+  onPaymentRequired={(payload, resume) => navigation.navigate('Payment', { payload, resume })}
+  onSuccess={payload => console.log('TRANSACTION_COMPLETE', payload)}
+  onError={err => console.warn(err.code, err.message)}
+  onLog={log => console.log(`[SDK ${log.level}]`, log.message)}
+  onPlatformFeeRequest={async payload => fetchFee(payload.operation, payload.metal)}
+  onNavigation={payload => analytics.track('sdk_route', payload.route)}
+  onQuotePreviewed={payload => console.log('QUOTE_PREVIEWED', payload)}
+  onTransactionConfirmed={payload => console.log('TRANSACTION_CONFIRMED', payload)}
+  onDeliveryComplete={payload => console.log('DELIVERY_COMPLETE', payload)}
+  onSdkEvent={event => console.log('SDK event', event.type, event.payload)}
+/>
+```
+
+### Per-event handler quick reference (Flutter)
+
+```dart
+JustGoldConnect(
+  token: token,
+  refreshToken: refreshToken,
+  sandbox: true,
+  onClose: () => Navigator.of(context).pop(),
+  onSessionExpired: reissueSession,
+  onAuthRequired: (_) => reissueSession(),
+  onTokensRefreshed: (payload) { /* see TOKENS_REFRESHED below */ },
+  onPaymentRequired: (payload, resume) { /* see PAYMENT_REQUIRED below */ },
+  onSuccess: (payload) { /* TRANSACTION_COMPLETE */ },
+  onError: (err) { /* ERROR */ },
+  onLog: (log) { /* LOG */ },
+  onPlatformFeeRequest: (payload) async { /* PLATFORM_FEE_REQUEST */ },
+  onSdkEvent: (event) {
+    switch (event['type']) {
+      case 'NAVIGATION':
+      case 'QUOTE_PREVIEWED':
+      case 'TRANSACTION_CONFIRMED':
+      case 'DELIVERY_COMPLETE':
+      case 'SESSION_STARTED':
+        debugPrint('$event');
+    }
+  },
+)
+```
 
 ---
 
@@ -175,6 +230,94 @@ class _TradingScreenState extends State<TradingScreen> {
 
 ---
 
+## React Native integration example (all callbacks)
+
+Complete pattern for partner apps using `@justgold/rn-sdk`:
+
+```tsx
+import { useCallback, useState } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { JustGoldConnect } from '@justgold/rn-sdk';
+import type { PaymentRequiredPayload } from '@justgold/rn-sdk';
+
+export function TradingScreen({ initialToken, initialRefreshToken, onDone }: Props) {
+  const [token, setToken] = useState(initialToken);
+  const [refreshToken, setRefreshToken] = useState(initialRefreshToken);
+
+  const reissueSession = useCallback(async () => {
+    const next = await partnerBackend.fetchJustGoldSession();
+    setToken(next.sessionToken);
+    setRefreshToken(next.refreshToken);
+  }, []);
+
+  return (
+    <SafeAreaProvider>
+      <JustGoldConnect
+        token={token}
+        refreshToken={refreshToken}
+        sandbox={false}
+        locale="en"
+        theme={{ mode: 'light', primaryColor: '#2563eb' }}
+        logLevel="warn"
+        onClose={onDone}
+        onSessionExpired={reissueSession}
+        onAuthRequired={reissueSession}
+        onTokensRefreshed={({ sessionToken, refreshToken: rt }) => {
+          setToken(sessionToken);
+          setRefreshToken(rt);
+          // persist rt in secure storage
+        }}
+        onPaymentRequired={(payload: PaymentRequiredPayload, resume) => {
+          navigation.navigate('PartnerPayment', {
+            payload,
+            onDone: () => {
+              navigation.goBack();
+              resume(payload.transactionId); // optional fast-path
+            },
+          });
+        }}
+        onSuccess={payload => console.log('Transaction complete', payload)}
+        onError={err => console.warn(`SDK error [${err.code}]:`, err.message)}
+        onLog={log => console.log(`[JustGold ${log.level}]`, log.message)}
+        onPlatformFeeRequest={async payload =>
+          partnerBackend.fetchPlatformFee(payload.operation, payload.metal)
+        }
+        onSdkEvent={event => {
+          switch (event.type) {
+            case 'NAVIGATION':
+            case 'QUOTE_PREVIEWED':
+            case 'TRANSACTION_CONFIRMED':
+            case 'DELIVERY_COMPLETE':
+              console.log('SDK event', event);
+          }
+        }}
+      />
+    </SafeAreaProvider>
+  );
+}
+```
+
+**React Native typed payloads** (import from `@justgold/sdk-bridge` or `@justgold/rn-sdk`):
+
+```ts
+import type {
+  AuthRequiredPayload,
+  PaymentRequiredPayload,
+  TokensRefreshedPayload,
+  TransactionCompletePayload,
+  SdkErrorPayload,
+  SdkLogPayload,
+  PlatformFeeRequestPayload,
+  QuotePreviewedPayload,
+  TransactionConfirmedPayload,
+  NavigationPayload,
+  DeliveryCompletePayload,
+  SessionStartedPayload,
+} from '@justgold/sdk-bridge';
+```
+
+---
+
 ## Host → SDK messages
 
 ### `INIT_SESSION`
@@ -249,6 +392,16 @@ onPaymentRequired: (payload, resume) async {
   await openPartnerPayment(payload);
   resume(payload.transactionId); // optional — triggers immediate status check
 },
+```
+
+**React Native:**
+
+```tsx
+onPaymentRequired={(payload, resume) => {
+  navigation.navigate('PartnerPayment', { payload });
+  // After PATCH + goBack(), optionally:
+  resume(payload.transactionId);
+}}
 ```
 
 ---
@@ -350,7 +503,22 @@ Authentication failed — re-issue session from partner backend.
 
 Also followed by `SESSION_EXPIRED`. Implement `onAuthRequired` and/or `onSessionExpired`.
 
----
+**React Native:**
+
+```tsx
+onAuthRequired={({ reason }) => {
+  console.warn('Re-issue session:', reason); // session_expired | token_renew_failed | unauthorized
+  reissueSession();
+}}
+onSessionExpired={reissueSession}
+```
+
+**Flutter:**
+
+```dart
+onAuthRequired: (payload) => _reissueSession(),
+onSessionExpired: _reissueSession,
+```
 
 ### `SESSION_EXPIRED`
 
@@ -386,6 +554,16 @@ onTokensRefreshed: (payload) {
     _refreshToken = payload['refreshToken'] as String?;
   });
 },
+```
+
+**React Native:**
+
+```tsx
+onTokensRefreshed={({ sessionToken, refreshToken }) => {
+  setToken(sessionToken);
+  setRefreshToken(refreshToken);
+  secureStore.set('jg_refresh', refreshToken);
+}}
 ```
 
 ---
@@ -433,6 +611,26 @@ SDK needs platform fee before calling preview API. Respond via `onPlatformFeeReq
 | `metal`     | `Gold` \| `Silver` (buy/sell)            |
 | `amount`    | String amount in org currency (buy/sell) |
 | `quantity`  | String grams (optional)                  |
+
+**React Native:**
+
+```tsx
+onPlatformFeeRequest={async payload => {
+  // payload.requestId, payload.operation, payload.metal, payload.amount
+  return 5.0; // org currency flat fee, or null for API default
+}}
+```
+
+**Flutter:**
+
+```dart
+onPlatformFeeRequest: (payload) async {
+  return partnerBackend.fetchPlatformFee(
+    operation: payload['operation'] as String,
+    metal: payload['metal'] as String?,
+  );
+},
+```
 
 ---
 
@@ -578,6 +776,25 @@ Authorization: Bearer <HMAC headers>
 }
 ```
 
+**React Native:**
+
+```tsx
+onPaymentRequired={(payload, resume) => {
+  // payload: { transactionId, type, amount, currency, metal, quantity }
+  navigation.navigate('PartnerPayment', { payload, resume });
+}}
+```
+
+**Flutter:**
+
+```dart
+onPaymentRequired: (payload, resume) {
+  Navigator.of(context).push(
+    MaterialPageRoute(builder: (_) => PartnerPaymentPage(payload: payload)),
+  );
+},
+```
+
 ---
 
 ### `PAYMENT_PENDING_CLEAR`
@@ -618,7 +835,9 @@ Buy or sell reached terminal success (result screen).
 }
 ```
 
-Maps to Flutter `onSuccess`.
+Maps to Flutter `onSuccess` and React Native `onSuccess`.
+
+**React Native / Flutter:** `onSuccess` receives the `payload` object above.
 
 ---
 
@@ -744,9 +963,9 @@ import type { SdkSessionConfig, SdkOutboundEvent, PaymentRequiredPayload } from 
 
 ---
 
-## Related
+## Related docs
 
-- [SDK overview](overview.md)
-- [Flutter integration](flutter.md)
 - [React Native integration](react-native.md)
-- [Session token](session-token.md)
+- [Flutter integration](flutter.md)
+- [SDK contract (callbacks & inputs)](bridge-events.md)
+- [Partner security integration FAQ](../integration.md)

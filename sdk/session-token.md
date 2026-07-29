@@ -1,244 +1,150 @@
-# Session Token
+# Backend authentication
 
-Before rendering the JustGold SDK, your mobile app needs a **short-lived session JWT** and optional **refresh token** from your backend. The app passes these to the SDK — your `client_secret` **never** leaves your server.
+Use **`@justgold/partner-sdk`** on your server to sign requests to the JustGold API.
 
-> See also: [SDK Overview](sdk/overview.md) · [React Native](sdk/react-native.md) · [Flutter](sdk/flutter.md)
+## Installation
 
----
-
-## Integration flow
-
-```mermaid
-sequenceDiagram
-    participant App as Partner app
-    participant Backend as Partner backend
-    participant JG as JustGold API
-    participant SDK as JustGoldConnect
-
-    App->>Backend: POST /api/justgold/session (your auth)
-    Backend->>JG: POST /v1/customers/{id}/token (HMAC)
-    JG-->>Backend: sessionToken + refreshToken
-    Backend-->>App: sessionToken + refreshToken
-    App->>SDK: token + refreshToken props
-    SDK->>JG: Bearer sessionToken (API calls)
-    SDK->>JG: POST /v1/customers/token/renew (silent renew)
-    SDK->>JG: (tokens rotated internally)
+```bash
+yarn add @justgold/partner-sdk
+# or
+npm install @justgold/partner-sdk
 ```
 
-1. **Your backend** signs `POST /v1/customers/{customerIdentifier}/token` with HMAC.
-2. **Your app** calls your own session endpoint and receives `sessionToken` + `refreshToken`.
-3. **Your app** passes both to `JustGoldConnect` (`token` / `refreshToken` props).
-4. **The SDK** renews automatically ~60 seconds before the JWT expires when `refreshToken` is provided.
+Requires **Node.js 18+**. No runtime dependencies.
 
----
-
-## Issue a session token (partner backend)
-
-### Authentication
-
-Requires HMAC headers:
-
-- `X-Client-Id`
-- `X-Timestamp`
-- `X-Signature`
-
-See [Authentication](../api/authentication.md) and [Request Signing](../api/request-signing.md).
-
-Use **`@justgold/partner-sdk`** on Node.js 18+ to sign requests:
+## Signing requests
 
 ```ts
 import { signRequest } from '@justgold/partner-sdk';
 
-const customerIdentifier = 'your-user-id';
-const path = `/v1/customers/${encodeURIComponent(customerIdentifier)}/token`;
-const body = JSON.stringify({});
+const body = JSON.stringify({
+  /* ... */
+});
 
 const headers = signRequest({
   method: 'POST',
-  path,
+  path: '/v1/customers/acme-user-42/token',
   body,
   clientId: process.env.JUSTGOLD_CLIENT_ID!,
   secret: process.env.JUSTGOLD_CLIENT_SECRET!,
 });
 
-const res = await fetch(`${process.env.JUSTGOLD_API_BASE_URL}${path}`, {
+const res = await fetch(`${process.env.JUSTGOLD_API_BASE_URL}/v1/customers/acme-user-42/token`, {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json', ...headers },
+  headers: {
+    'Content-Type': 'application/json',
+    ...headers,
+  },
   body,
 });
-
-const { sessionToken, refreshToken } = await res.json();
-// Return both to your mobile app
 ```
 
-### Endpoint
+See [`packages/partner-sdk/README.md`](https://github.com/Just-Gold-JG/justgold.b2b) for the full HMAC algorithm.
 
-```http
-POST /v1/customers/:customerIdentifier/token
-```
+## Issuing a session token
 
-| Parameter | Type | Required | Description |
-| --- | --- | --- | --- |
-| `customerIdentifier` | string | Yes | Partner-scoped customer ID. Created automatically if it does not exist. |
+Your mobile or web app should call **your** backend endpoint, e.g. `POST /api/justgold/session`, which:
 
-**Request body:** none.
+1. Identifies the logged-in user
+2. Maps them to a JustGold `customerIdentifier`
+3. Calls JustGold `POST /v1/customers/{customerIdentifier}/token` with HMAC headers
+4. Returns `{ sessionToken, refreshToken? }` to the client
 
-#### Sample request
-
-```http
-POST /v1/customers/cust-10293/token
-Content-Type: application/json
-X-Client-Id: jg_partner_123
-X-Timestamp: 1767225600
-X-Signature: <hmac_signature>
-```
-
-#### Sample response
+Example response to your app:
 
 ```json
 {
-  "sessionToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "g1ZmVyZXNoX3Rva2VuX2V4YW1wbGU..."
+  "sessionToken": "eyJhbG...",
+  "refreshToken": "eyJhbG..."
 }
 ```
 
-| Field | Type | Description |
-| --- | --- | --- |
-| `sessionToken` | string | JWT for SDK API calls. Valid for **10 minutes**. |
-| `refreshToken` | string | Opaque token for silent session renewal. Valid for **4 hours** (see below). |
+## Token refresh
 
-#### Responses
+When the SDK emits `SESSION_EXPIRED` or silently renews tokens, you may receive `TOKENS_REFRESHED` on the host with new tokens. Persist the new `refreshToken` if your integration stores it.
 
-| Status | Meaning |
-| --- | --- |
-| `200 OK` | Token issued successfully |
-| `401 Unauthorized` | HMAC signature missing or invalid |
-| `429 Too Many Requests` | Rate limit exceeded |
-| `500 Internal Server Error` | Unexpected server error |
+You can also refresh server-side using JustGold's token renew endpoint (see API docs / Postman collection).
 
----
+## Example: Express route
 
-## Renew a session token (SDK automatic)
+```ts
+import express from 'express';
+import { signRequest } from '@justgold/partner-sdk';
 
-The SDK calls this endpoint **automatically** ~60 seconds before the JWT expires. Partners normally do **not** call it directly from the app.
+const app = express();
 
-### Endpoint
+app.post('/api/justgold/session', async (req, res) => {
+  const customerId = req.user.id; // your auth
+  const path = `/v1/customers/${encodeURIComponent(customerId)}/token`;
+  const body = JSON.stringify({});
 
-```http
-POST /v1/customers/token/renew
+  const headers = signRequest({
+    method: 'POST',
+    path,
+    body,
+    clientId: process.env.JUSTGOLD_CLIENT_ID!,
+    secret: process.env.JUSTGOLD_CLIENT_SECRET!,
+  });
+
+  const apiRes = await fetch(`${process.env.JUSTGOLD_API_BASE_URL}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...headers },
+    body,
+  });
+
+  if (!apiRes.ok) {
+    return res.status(apiRes.status).json({ error: await apiRes.text() });
+  }
+
+  res.json(await apiRes.json());
+});
 ```
 
-**Authentication:** none (HMAC not required). The `refreshToken` in the body is the credential.
+## SDK UI signed URL
 
-#### Request body
-
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `refreshToken` | string | Yes | Current refresh token |
-
-#### Sample request
+Mobile wrappers load the trading UI from JustGold CDN by default. The Partner API returns a **short-lived signed CloudFront URL** (TTL **1 hour**).
 
 ```http
-POST /v1/customers/token/renew
-Content-Type: application/json
-
-{
-  "refreshToken": "g1ZmVyZXNoX3Rva2VuX2V4YW1wbGU..."
-}
+GET /v1/sdk/ui-url?sandbox=true
+Authorization: Bearer <sessionToken>
+Accept: application/json
 ```
 
-#### Sample response
+Query parameters:
+
+| Param | Description |
+| ----- | ----------- |
+| `sandbox` | `true` for dev/stage CDN + API; omit or `false` for production |
+| `version` | Optional pin, e.g. `1.0.0` (default `latest`) |
+
+**Response:**
 
 ```json
 {
-  "sessionToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "new_rotated_refresh_token..."
+  "url": "https://sdk.dev.justgold.app/latest/index.html?Expires=...&Signature=...&Key-Pair-Id=...",
+  "expiresAt": "2026-07-29T15:26:03.205Z"
 }
 ```
 
-Each successful renew **rotates** the refresh token — the previous refresh token is invalidated. The SDK manages the new token pair internally.
+**Partners normally do not call this directly** — `@justgold/rn-sdk` and `justgold_sdk` fetch it automatically when `sdkUrl` is omitted. Optional server-side proxy:
 
----
-
-## Revoke a refresh token (optional)
-
-Partners may call this from the backend to explicitly invalidate a refresh token (e.g. user logout). The SDK does **not** call this automatically when the SDK closes.
-
-```http
-POST /v1/customers/token/revoke
-Content-Type: application/json
-
-{
-  "refreshToken": "g1ZmVyZXNoX3Rva2VuX2V4YW1wbGU..."
-}
+```ts
+app.get('/api/justgold/session', async (req, res) => {
+  // ... issue sessionToken via HMAC as above ...
+  const uiRes = await fetch(`${process.env.JUSTGOLD_API_BASE_URL}/v1/sdk/ui-url?sandbox=true`, {
+    headers: { Authorization: `Bearer ${sessionToken}`, Accept: 'application/json' },
+  });
+  const { url: sdkUiSignedUrl, expiresAt: sdkUiExpiresAt } = await uiRes.json();
+  res.json({ sessionToken, refreshToken, sdkUiSignedUrl, sdkUiExpiresAt });
+});
 ```
 
-**Response:** `204 No Content`
+Returns **503** when CDN signing is not configured on that environment.
 
----
+CDN details (maintainers): [SDK CDN deploy](session-token.md#sdk-ui-signed-url)
 
-## Token lifetime
+## Next steps
 
-| Token | Lifetime | Purpose |
-| --- | --- | --- |
-| `sessionToken` | **10 minutes** | Bearer JWT for authenticated SDK API calls |
-| `refreshToken` | **4 hours** (Redis TTL) | Silent renewal before JWT expiry |
-
-### Recommended partner behaviour
-
-| Scenario | Action |
-| --- | --- |
-| Customer opens JustGold flow | Request a fresh token pair from your backend |
-| SDK silent renew succeeds | Tokens rotated internally — no action required |
-| Customer leaves SDK / SDK closed | Tokens cleared from SDK memory. Request a new pair on next open |
-| User logs out of your app | Optionally call `POST /v1/customers/token/revoke` from your backend |
-
----
-
-## Pass tokens to the SDK
-
-### React Native
-
-```tsx
-<JustGoldConnect
-  token={sessionToken}
-  refreshToken={refreshToken}
-  sandbox={false}
-  // ...other callbacks
-/>
-```
-
-Full guide: [React Native integration](sdk/react-native.md)
-
-### Flutter
-
-```dart
-JustGoldConnect(
-  token: sessionToken,
-  refreshToken: refreshToken,
-  sandbox: false,
-  // ...other callbacks
-)
-```
-
-Full guide: [Flutter integration](sdk/flutter.md)
-
----
-
-## Security notes
-
-- **Never** embed `client_id` / `client_secret` in mobile app code.
-- Expose a **your-backend-only** session endpoint (e.g. `POST /api/justgold/session`) that returns tokens to authenticated users.
-- Match the **`sandbox`** flag on the SDK to the environment your HMAC credentials target:
-  - Sandbox API: `https://api.dev.partner.justgold.app`
-  - Production API: `https://api.partner.justgold.app`
-
----
-
-## Related docs
-
-- [SDK Overview](sdk/overview.md)
-- [React Native integration](sdk/react-native.md)
-- [Flutter integration](sdk/flutter.md)
-- [Request Signing](../api/request-signing.md)
-- [Customers API](../api/customers.md)
+- Web: [Web integration](../integration.md)
+- React Native: [React Native integration](react-native.md)
+- Flutter: [Flutter integration](flutter.md)
