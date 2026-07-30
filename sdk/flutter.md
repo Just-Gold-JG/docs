@@ -1,6 +1,8 @@
 # Flutter SDK Integration
 
-Embed the JustGold gold & silver trading UI in your Flutter app with **`justgold_sdk`** on [pub.dev](https://pub.dev/packages/justgold_sdk). The UI ships as a pre-built bundle inside the package — no CDN or separate UI deploy.
+Embed the JustGold gold & silver trading UI in your Flutter app with **`justgold_sdk`** (^1.0.2) on [pub.dev](https://pub.dev/packages/justgold_sdk).
+
+The wrapper loads the UI from **JustGold CDN** automatically — no separate UI deploy.
 
 > **Prerequisites:** [Session Token](sdk/session-token.md) from your backend · [SDK Overview](sdk/overview.md)
 
@@ -10,11 +12,11 @@ Embed the JustGold gold & silver trading UI in your Flutter app with **`justgold
 flowchart TD
     A[User opens gold feature] --> B[App calls your backend]
     B --> C[Backend returns sessionToken + refreshToken]
-    C --> D[Render JustGold SDK]
-    D --> E[SDK UI loads and calls JustGold API]
+    C --> D[JustGoldConnect loads signed CDN URL]
+    D --> E[WebView shows trading UI]
     E --> F{Callback}
     F -->|onClose| G[Dismiss SDK]
-    F -->|onPaymentRequest| H[Partner payment UI]
+    F -->|onPaymentRequired| H[Partner payment UI]
 
 
 ```
@@ -27,7 +29,7 @@ Your backend still owns HMAC credentials and customer mapping. The mobile app re
 
 ```yaml
 dependencies:
-  justgold_sdk: ^1.0.0
+  justgold_sdk: ^1.0.2
 ```
 
 ```bash
@@ -85,8 +87,10 @@ class TradingPage extends StatelessWidget {
             primaryColor: '#2563eb',
           ),
           onClose: () => Navigator.of(context).pop(),
-
-          onPaymentRequest: (payload, _) {
+          onSessionExpired: () => _refreshSession(context),
+          onAuthRequired: (_) => _refreshSession(context),
+          onTokensRefreshed: (payload) => _persistTokens(payload),
+          onPaymentRequired: (payload, _) {
             Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => PartnerPaymentPage(payload: payload),
@@ -124,11 +128,14 @@ Partners do **not** pass `apiBaseUrl` — the wrapper resolves it from the `sand
 | `platformFee` | `double?` | Optional flat platform fee for preview APIs |
 | `logLevel` | `String?` | `debug` \| `info` \| `warn` \| `error` |
 | `onClose` | `VoidCallback?` | User closed the SDK |
-| `onPaymentRequest` | `PaymentRequiredCallback?` | Open partner payment UI — see below |
+| `onSessionExpired` | `VoidCallback?` | Re-issue session from your backend |
+| `onAuthRequired` | `AuthRequiredCallback?` | Re-issue session (`payload['reason']`) |
+| `onTokensRefreshed` | `TokensRefreshedCallback?` | Persist new refresh token |
+| `onPaymentRequired` | `PaymentRequiredCallback?` | Open partner payment UI — see below |
+| `onPlatformFeeRequest` | `PlatformFeeCallback?` | Dynamic platform fee before preview |
 | `onError` | `ErrorCallback?` | Unrecoverable SDK error |
 | `onLog` | `LogCallback?` | Optional structured SDK logs |
-| `onResolvePlatformFee` | `Future<double> Function(dynamic)?` | Async callback — return a dynamic platform fee instead of `platformFee` |
-| `onAuthExpired` | `VoidCallback?` | Auth failed — re-issue session |
+| `sdkUiSignedUrl` | `String?` | Optional pre-signed CDN URL from your backend |
 | `onSdkEvent` | `SdkEventCallback?` | Raw bridge events for advanced integrations |
 
 ### Theming
@@ -154,9 +161,10 @@ Logo URLs must be **HTTPS**.
 | Callback | When | Your action |
 | --- | --- | --- |
 | `onClose` | User taps close | `Navigator.pop` or dismiss |
-| `onPaymentRequest` | User confirmed quote; payment is partner-side | Open payment UI → PATCH transaction status |
-| `onResolvePlatformFee` | SDK needs to resolve the platform fee dynamically | Return a `Future<double>` with the fee amount |
-| `onAuthExpired` | Authentication failed or session cannot be renewed | Re-issue a fresh session from your backend |
+| `onPaymentRequired` | User confirmed quote; payment is partner-side | Open payment UI → PATCH transaction status |
+| `onPlatformFeeRequest` | SDK needs platform fee before preview | Return fee amount or `null` for org default |
+| `onSessionExpired` / `onAuthRequired` | Session invalid or renew failed | Re-issue a fresh session from your backend |
+| `onTokensRefreshed` | Silent renew succeeded | Persist new `refreshToken` |
 | `onError` | SDK error | Log and show a recoverable message |
 
 ```dart
@@ -164,7 +172,7 @@ JustGoldConnect(
   token: sessionToken,
   refreshToken: refreshToken,
   onClose: () => Navigator.of(context).pop(),
-  onAuthExpired: () async {
+  onSessionExpired: () async {
     final next = await fetchSessionFromBackend();
     if (!mounted) return;
     setState(() {
@@ -172,24 +180,23 @@ JustGoldConnect(
       refreshToken = next.refreshToken;
     });
   },
-  onPaymentRequest: (transaction, resume) {
+  onAuthRequired: (_) async {
+    final next = await fetchSessionFromBackend();
+    if (!mounted) return;
+    setState(() {
+      sessionToken = next.sessionToken;
+      refreshToken = next.refreshToken;
+    });
+  },
+  onPaymentRequired: (payload, resume) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => PartnerPaymentPage(
-          transaction: transaction,
-          onComplete: (transactionId) => resume(transactionId),
-        ),
+        builder: (_) => PartnerPaymentPage(payload: payload),
       ),
     );
   },
-  onResolvePlatformFee: ({ transactionType, amount, quantity, deliveryFee, mintingFee }) async {
-    return await fetchPlatformFee(
-      transactionType: transactionType,
-      amount: amount,
-      quantity: quantity,
-      deliveryFee: deliveryFee,
-      mintingFee: mintingFee,
-    );
+  onPlatformFeeRequest: (payload) async {
+    return await fetchPlatformFee(payload);
   },
   onError: (err) => debugPrint('SDK error: $err'),
 )
@@ -199,7 +206,7 @@ JustGoldConnect(
 
 ## 6. Full-page payment
 
-When the user confirms a buy, sell, or delivery quote, the SDK creates a **Pending** transaction and emits **`PAYMENT_REQUESTED`**. Your app collects payment using your PCI-compliant stack, then updates status via the partner HMAC API:
+When the user confirms a buy, sell, or delivery quote, the SDK creates a **Pending** transaction and calls **`onPaymentRequired`**. Your app collects payment using your PCI-compliant stack, then updates status via the partner HMAC API:
 
 ```http
 PATCH /v1/transactions/:transactionId
@@ -212,7 +219,7 @@ See [Transactions](../api/transactions.md).
 Keep `JustGoldConnect` **mounted**. Push a full-screen payment route on top:
 
 ```dart
-onPaymentRequest: (payload, _) {
+onPaymentRequired: (payload, _) {
   Navigator.of(context).push(
     MaterialPageRoute(builder: (_) => PartnerPaymentPage(payload: payload)),
   );
@@ -234,24 +241,28 @@ The second callback argument posts `PAYMENT_RESULT` for instant navigation. **No
 
 ## 7. Platform requirements
 
-No extra iOS or Android configuration is required for basic integration. The SDK loads its bundled UI via an internal custom URL scheme on both platforms (ES modules require a non-`file://` origin).
-
 | Platform | Requirement |
 | --- | --- |
-| Android | `INTERNET` permission in your app manifest |
+| Android | `INTERNET` in **main** manifest (required for release APKs) |
 | iOS | HTTPS under App Transport Security |
 | Flutter | SDK `>=3.0.0`, Flutter `>=3.10.0` |
 
-**Android Gradle:** If you use Android Gradle Plugin 9.0+ with `flutter_inappwebview`, you may need:
-
-```properties
-# android/gradle.properties
-android.r8.proguardAndroidTxt.disallowed=false
+```xml
+<!-- android/app/src/main/AndroidManifest.xml -->
+<uses-permission android:name="android.permission.INTERNET"/>
 ```
 
 ---
 
-## 8. Permissions
+## 8. SDK UI (CDN)
+
+By default, `JustGoldConnect` fetches a signed URL from `GET /v1/sdk/ui-url`. See [Session Token — SDK UI URL](sdk/session-token.md#sdk-ui-signed-url-mobile).
+
+Optional: pass `sdkUiSignedUrl` from your backend token response to skip the in-app fetch.
+
+---
+
+## 9. Permissions
 
 The SDK does **not** declare sensitive device permissions (camera, location, contacts, biometrics).
 
@@ -259,13 +270,14 @@ Payment, KYC, and EFR flows outside the SDK use permissions your app declares se
 
 ---
 
-## 9. Production checklist
+## 10. Production checklist
 
 - [ ] Session tokens issued from your backend only — `client_secret` never in the app
 - [ ] `sandbox: false` for production builds
+- [ ] Android `INTERNET` in main manifest
 - [ ] `SafeArea` or correct inset context around `JustGoldConnect`
 - [ ] SDK UI loads (not a blank screen)
-- [ ] Payment flow: `PAYMENT_REQUESTED` → PATCH transaction → close payment screen
+- [ ] Payment flow: `onPaymentRequired` → PATCH transaction → close payment screen
 - [ ] Test completed, cancelled, and error paths
 - [ ] Confirm Android package ID and iOS bundle ID with JustGold onboarding
 - [ ] Webhook and reconciliation configured — see [Webhooks](../webhooks.md)

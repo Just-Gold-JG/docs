@@ -16,20 +16,20 @@ Choose an SDK if you need:
 
 | Platform | Package | Registry | UI hosting |
 | --- | --- | --- | --- |
-| React Native | `@justgold/rn-sdk` | [npm](https://www.npmjs.com/package/@justgold/rn-sdk) | Bundled inside the npm package |
-| Flutter | `justgold_sdk` | [pub.dev](https://pub.dev/packages/justgold_sdk) | Bundled inside the pub package |
+| React Native | `@justgold/rn-sdk` | [npm](https://www.npmjs.com/package/@justgold/rn-sdk) | JustGold CDN (signed URL via Partner API) |
+| Flutter | `justgold_sdk` | [pub.dev](https://pub.dev/packages/justgold_sdk) | JustGold CDN (signed URL via Partner API) |
 | Backend (all platforms) | `@justgold/partner-sdk` | [npm](https://www.npmjs.com/package/@justgold/partner-sdk) | Server-side HMAC signing only |
 
-Both mobile SDKs embed the same trading UI via **`JustGoldConnect`**. Your app renders the component full-screen and handles callbacks — there is no separate `launch()` API.
+Both mobile SDKs embed the same trading UI via **`JustGoldConnect`**. The wrapper fetches a short-lived signed CDN URL from `GET /v1/sdk/ui-url` — you do **not** host or deploy the UI yourself.
 
-**API environments:**
+**Environments** (match backend credentials and SDK `sandbox` flag):
 
-| Environment | Base URL |
-| --- | --- |
-| Sandbox | `https://api.dev.partner.justgold.app` |
-| Production | `https://api.partner.justgold.app` |
+| Environment | Partner API | SDK CDN (signed) | `sandbox` |
+| --- | --- | --- | --- |
+| Sandbox | `https://api.stage.partner.justgold.app` | `https://sdk.stage.justgold.app` | `true` |
+| Production | `https://api.partner.justgold.app` | `https://sdk.justgold.app` | `false` / omit |
 
-Pass `sandbox: true` (RN) or `sandbox: true` (Flutter) to the SDK component — partners do not configure `apiBaseUrl` in the client.
+Pass `sandbox: true` to the SDK component for sandbox integration — partners do not configure `apiBaseUrl` in the client.
 
 ---
 
@@ -265,7 +265,7 @@ The host sends messages back via props or wrapper methods (most are handled auto
 
 1. **Backend session endpoint** — expose an app-facing route that returns `sessionToken` and `refreshToken`. See [Session Token](sdk/session-token.md).
 2. **HMAC credentials** — store `client_id` and `client_secret` on your backend only. Use `@justgold/partner-sdk` for signing.
-3. **Install the client package** — `@justgold/rn-sdk` or `justgold_sdk` ^1.0.0.
+3. **Install the client package** — `@justgold/rn-sdk` ^1.0.2 or `justgold_sdk` ^1.0.2.
 4. **Implement callbacks** — at minimum: `onClose`, `onSessionExpired` (or `onAuthRequired`), `onPaymentRequired`. See [Bridge events & payloads](sdk/bridge-events.md).
 5. **Payment handoff** — PATCH `/v1/transactions/:id` from your backend after partner-side payment.
 6. **Webhooks & reconciliation** — see [Webhooks](../webhooks.md).
