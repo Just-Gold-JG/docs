@@ -615,12 +615,12 @@ This endpoint accepts either:
 
 ## Generate invoice
 
-Generates an invoice for a completed transaction and delivers it to the provided contact details.
+Generates an invoice for a transaction and delivers it to the provided contact details. The transaction and customer are identified in the request body.
 
 #### Endpoint
 
 ```http
-POST /v1/customers/:customerIdentifier/transactions/:transactionId/invoice
+POST /v1/customers/invoice
 ```
 
 #### Authentication
@@ -633,35 +633,40 @@ This endpoint requires:
 
 See [Authentication](api/authentication.md) and [Request Signing](api/request-signing.md).
 
-#### Path parameters
-
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `customerIdentifier` | string | Yes | Partner-scoped customer identifier. |
-| `transactionId` | string | Yes | Transaction identifier for which the invoice is generated. |
-
 #### Request body
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
+| `transactionId` | string | Yes | Identifier of the transaction to generate the invoice for. |
+| `customerIdentifier` | string | Yes | Partner-scoped identifier of the customer the transaction belongs to. |
+| `type` | string | Yes | Transaction type. One of `Buy`, `Sell`, or `Delivery`. |
 | `firstName` | string | Yes | Recipient first name, printed on the invoice. |
 | `lastName` | string | Yes | Recipient last name, printed on the invoice. |
+| `phone` | object | Yes | Recipient phone details. |
+| `phone.countryCode` | string | Yes | Phone country code (e.g. `+971`). |
+| `phone.number` | string | Yes | Phone number without country code. |
 | `email` | string | No | Email address the invoice is sent to. |
-| `phone` | object | No | Recipient phone details. |
-| `phone.countryCode` | string | Yes, if `phone` is provided | Phone country code (e.g. `+971`). |
-| `phone.number` | string | Yes, if `phone` is provided | Phone number without country code. |
+| `country` | string | No | Recipient country as an ISO 3166-1 alpha-2 code (e.g. `AE`). |
+| `address` | string | No | Recipient address, printed on the invoice. |
+| `extend1` | string | No | Optional pass-through field, reserved for partner use. |
+| `extend2` | string | No | Optional pass-through field, reserved for partner use. |
 
 #### Sample request
 
 ```json
 {
+  "transactionId": "682710cc3f1b2c7a9d5e1111",
+  "customerIdentifier": "cust-10293",
+  "type": "Buy",
   "firstName": "Aarav",
   "lastName": "Mehta",
   "email": "aarav@example.com",
   "phone": {
     "countryCode": "+971",
     "number": "501234567"
-  }
+  },
+  "country": "AE",
+  "address": "Downtown, Dubai"
 }
 ```
 
@@ -669,13 +674,17 @@ See [Authentication](api/authentication.md) and [Request Signing](api/request-si
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `url` | string | Pre-signed URL to download the invoice PDF. Valid for a short period — download promptly after receiving. |
+| `transactionId` | string | The transaction identifier the invoice was generated for (echoed from the request). |
+| `customerIdentifier` | string | The customer identifier the invoice was generated for (echoed from the request). |
+| `downloadLink` | string | Pre-signed URL to download the invoice PDF. Valid for a short period — download promptly after receiving. |
 
 #### Sample response
 
 ```json
 {
-  "url": "https://storage.example.com/invoices/invoice-682710cc3f1b2c7a9d5e2222.pdf?X-Amz-Signature=..."
+  "transactionId": "682710cc3f1b2c7a9d5e1111",
+  "customerIdentifier": "cust-10293",
+  "downloadLink": "https://storage.example.com/invoices/invoice-682710cc3f1b2c7a9d5e2222.pdf?X-Amz-Signature=..."
 }
 ```
 
@@ -684,6 +693,7 @@ See [Authentication](api/authentication.md) and [Request Signing](api/request-si
 | Status | Meaning |
 | --- | --- |
 | `201 Created` | Invoice generated successfully. |
+| `400 Bad Request` | Request payload is invalid or a required field is missing (`transactionId`, `customerIdentifier`, `type`, `firstName`, `lastName`, or `phone`). |
 | `404 Not Found` | No transaction found for the given `customerIdentifier` and `transactionId` combination. |
 | `429 Too Many Requests` | Rate limit exceeded. Retry later. |
 | `500 Internal Server Error` | An unexpected error occurred on the JustGold side. |
