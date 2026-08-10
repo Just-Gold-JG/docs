@@ -207,6 +207,107 @@ Returns the updated customer object inside a `customer` wrapper.
 
 ---
 
+## Update KYC
+
+Passes a customer's KYC details to JustGold. These are used to verify the customer at the time of physical gold delivery. The customer is identified by `customerIdentifier` in the request body.
+
+#### Endpoint
+
+```http
+POST /v1/customers/UpdateKYC
+```
+
+#### Authentication
+
+This endpoint requires:
+
+- `X-Client-Id`
+- `X-Timestamp`
+- `X-Signature`
+
+See [Authentication](api/authentication.md) and [Request Signing](api/request-signing.md).
+
+The organization is determined from `X-Client-Id` and does not need to be sent in the request body.
+
+#### Request body
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `transactionID` | string | No | Your transaction identifier. |
+| `customerIdentifier` | string | Yes | Partner-scoped identifier of the customer to update. |
+| `firstName` | string | No | Customer's first name. |
+| `lastName` | string | No | Customer's last name. |
+| `nationalId` | string | No | Emirates ID / national identity document number, digits only (no dashes). |
+| `nationalIdExpiry` | string | No | Expiry date of the national identity document in `YYYY-MM-DD` format. |
+| `phone` | object | No | Customer phone details. |
+| `phone.countryCode` | string | Yes, if `phone` is provided | Phone country code, e.g. `971`. |
+| `phone.number` | string | Yes, if `phone` is provided | Phone number without the country code. |
+
+All KYC fields are optional.
+
+#### Sample request
+
+```json
+{
+  "transactionID": "TXN-90210",
+  "customerIdentifier": "cust-10293",
+  "firstName": "Sara",
+  "lastName": "Al Mansoori",
+  "nationalId": "784199012345671",
+  "nationalIdExpiry": "2030-03-15",
+  "phone": {
+    "countryCode": "971",
+    "number": "501234567"
+  }
+}
+```
+
+#### Response body
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `responseCode` | string | Yes | Response code; `SYS00000` indicates success. |
+| `responseDesc` | string | Yes | Response description; `Operation success.` indicates success. |
+| `serverTimestamp` | string | Yes | Response timestamp. |
+| `customer` | object | No | Updated customer. |
+| `customer.id` | string | No | Customer identifier. |
+| `customer.identifier` | string | No | Partner-scoped customer identifier. |
+| `customer.firstName` | string | No | Updated first name. |
+| `customer.lastName` | string | No | Updated last name. |
+| `customer.nationalId` | string \| null | No | Emirates ID or national identity document number. |
+| `customer.nationalIdExpiry` | string \| null | No | Expiry date of the national identity document (`YYYY-MM-DD`). |
+
+#### Sample response
+
+```json
+{
+  "responseCode": "SYS00000",
+  "responseDesc": "Operation success.",
+  "serverTimestamp": "2026-07-01T14:30:00.000Z",
+  "customer": {
+    "id": "6818744f3f1b2c7a9d5e4321",
+    "identifier": "cust-10293",
+    "firstName": "Sara",
+    "lastName": "Al Mansoori",
+    "nationalId": "784199012345671",
+    "nationalIdExpiry": "2030-03-15"
+  }
+}
+```
+
+#### Responses
+
+| Status | Meaning |
+| --- | --- |
+| `200 OK` | KYC updated successfully. |
+| `400 Bad Request` | Request payload is invalid, or `customerIdentifier` is missing. |
+| `401 Unauthorized` | HMAC authentication failed. |
+| `404 Not Found` | Customer was not found. |
+| `429 Too Many Requests` | Rate limit exceeded. Retry later. |
+| `500 Internal Server Error` | An unexpected error occurred on the JustGold side. |
+
+---
+
 ## Get customer holdings
 
 Returns the current gold and silver holdings for a customer.
