@@ -644,12 +644,12 @@ See [Authentication](api/authentication.md) and [Request Signing](api/request-si
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `firstName` | string | Yes | Recipient first name, printed on the invoice. |
-| `lastName` | string | Yes | Recipient last name, printed on the invoice. |
-| `email` | string | No | Email address the invoice is sent to. |
-| `phone` | object | No | Recipient phone details. |
-| `phone.countryCode` | string | Yes, if `phone` is provided | Phone country code (e.g. `+971`). |
-| `phone.number` | string | Yes, if `phone` is provided | Phone number without country code. |
+| `firstName` | string | Yes | Recipient first name (UTF-8), printed on the invoice. |
+| `lastName` | string | Yes | Recipient last name (UTF-8), printed on the invoice. |
+| `msisdn` | string | Yes | Mobile number in international format, digits only — no leading `+` or spaces (e.g. `971XXXXXXXXX`). |
+| `email` | string | No | Email address (RFC 5322). |
+| `country` | string | No | Country as an ISO 3166-1 alpha-2 code (e.g. `AE`, `SA`, `EG`). Printed on the invoice address. |
+| `address` | string | No | Free-form address (UTF-8). Printed on the invoice; falls back to the transaction's delivery address when omitted. |
 
 #### Sample request
 
@@ -657,11 +657,10 @@ See [Authentication](api/authentication.md) and [Request Signing](api/request-si
 {
   "firstName": "Aarav",
   "lastName": "Mehta",
+  "msisdn": "971501234567",
   "email": "aarav@example.com",
-  "phone": {
-    "countryCode": "+971",
-    "number": "501234567"
-  }
+  "country": "AE",
+  "address": "12 Sheikh Zayed Road, Dubai"
 }
 ```
 
@@ -669,13 +668,17 @@ See [Authentication](api/authentication.md) and [Request Signing](api/request-si
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `url` | string | Pre-signed URL to download the invoice PDF. Valid for a short period — download promptly after receiving. |
+| `customerIdentifier` | string | The customer identifier supplied in the request. |
+| `transactionId` | string | The transaction identifier the invoice was generated for. |
+| `downloadLink` | string | Pre-signed URL to download the invoice PDF. Valid for a short period — download promptly after receiving. |
 
 #### Sample response
 
 ```json
 {
-  "url": "https://storage.example.com/invoices/invoice-682710cc3f1b2c7a9d5e2222.pdf?X-Amz-Signature=..."
+  "customerIdentifier": "1234567890",
+  "transactionId": "682710cc3f1b2c7a9d5e2222",
+  "downloadLink": "https://storage.example.com/invoices/invoice-682710cc3f1b2c7a9d5e2222.pdf?X-Amz-Signature=..."
 }
 ```
 
@@ -684,6 +687,7 @@ See [Authentication](api/authentication.md) and [Request Signing](api/request-si
 | Status | Meaning |
 | --- | --- |
 | `201 Created` | Invoice generated successfully. |
+| `400 Bad Request` | Missing or invalid field (e.g. `msisdn` not in international digits-only format, or `country` not a valid ISO 3166-1 alpha-2 code). |
 | `404 Not Found` | No transaction found for the given `customerIdentifier` and `transactionId` combination. |
 | `429 Too Many Requests` | Rate limit exceeded. Retry later. |
 | `500 Internal Server Error` | An unexpected error occurred on the JustGold side. |
