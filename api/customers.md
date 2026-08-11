@@ -239,9 +239,7 @@ The organization is determined from `X-Client-Id` and does not need to be sent i
 | `lastName` | string | No | Customer's last name. |
 | `nationalId` | string | No | Emirates ID / national identity document number, digits only (no dashes). |
 | `nationalIdExpiry` | string | No | Expiry date of the national identity document in `YYYY-MM-DD` format. |
-| `phone` | object | No | Customer phone details. |
-| `phone.countryCode` | string | Yes, if `phone` is provided | Phone country code, e.g. `971`. |
-| `phone.number` | string | Yes, if `phone` is provided | Phone number without the country code. |
+| `phone` | string | No | Customer MSISDN in international format (with or without a leading `+`), e.g. `971501234567`. |
 
 All KYC fields are optional.
 
@@ -255,10 +253,7 @@ All KYC fields are optional.
   "lastName": "Al Mansoori",
   "nationalId": "784199012345671",
   "nationalIdExpiry": "2030-03-15",
-  "phone": {
-    "countryCode": "971",
-    "number": "501234567"
-  }
+  "phone": "971501234567"
 }
 ```
 
