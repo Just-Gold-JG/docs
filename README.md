@@ -7,7 +7,7 @@ Build digital gold experiences with JustGold using the integration path that fit
 | Method | Best for | You build | JustGold provides |
 | --- | --- | --- | --- |
 | [API integration](api/overview.md) | Backend-led products, custom checkout, server-side orchestration | Customer mapping, order screens, payment flow, request signing, webhooks | REST APIs for customers, prices, previews, buy, sell, delivery, and transactions |
-| [SDK integration](sdk/overview.md) | Mobile apps that need a faster embedded integration | App entry points, user session handoff, native app handling | Mobile SDK flows for React Native and Flutter |
+| [SDK integration](sdk/overview.md) | Mobile apps (React Native or Flutter) that need a faster embedded integration | App entry points, user session handoff, payment UI, native callbacks | `@justgold/rn-sdk` ^1.1.0 and `justgold_sdk` ^1.1.0 — CDN-hosted trading UI |
 
 ## Core capabilities
 
@@ -22,7 +22,7 @@ Build digital gold experiences with JustGold using the integration path that fit
 ## Recommended reading order
 
 1. Start with [Getting Started](getting-started.md)
-2. Pick [API integration](api/overview.md) or [SDK integration](sdk/overview.md)
+2. Pick [API integration](api/overview.md) or [SDK integration](sdk/overview.md) — mobile partners start with [SDK Quickstart](sdk/quickstart.md)
 3. Review [Portal Access](portal-access.md) and [Authentication](api/authentication.md)
 4. For API builds, implement [Request Signing](api/request-signing.md)
 5. Follow the [Integration](integration.md)

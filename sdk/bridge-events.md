@@ -2,6 +2,8 @@
 
 All platforms use the same JSON message envelope. Platform wrappers (`justgold_sdk`, `@justgold/rn-sdk`) translate bridge messages into typed callbacks — partners normally implement **callbacks**, not raw `postMessage`.
 
+**Current SDK version:** 1.1.0
+
 ```json
 { "type": "EVENT_NAME", "payload": {} }
 ```
@@ -14,37 +16,91 @@ Some host → SDK messages omit `payload` (e.g. `PAYMENT_RESULT` uses top-level 
 
 ### Host → SDK (you send — wrappers send most of these automatically)
 
-| Event                   | Partner action?                                  | Flutter / wrapper                              |
+| Event                   | Partner action?                                  | React Native / Flutter wrapper                 |
 | ----------------------- | ------------------------------------------------ | ---------------------------------------------- |
 | `INIT_SESSION`          | Pass props — wrapper sends                       | Automatic on load                              |
 | `PAYMENT_RESULT`        | Optional fast-path after payment                 | `resume(transactionId)` in `onPaymentRequired` |
 | `UPDATE_PLATFORM_FEE`   | Optional runtime fee change                      | `setPlatformFee` (ref API where exposed)       |
-| `PLATFORM_FEE_RESPONSE` | Only if custom host (not using wrapper callback) | Wrapper handles via `onPlatformFeeRequest`     |
+| `PARTNER_FEE_RESPONSE`  | Only if custom host (not using wrapper callback) | Wrapper handles via `onPartnerFeeRequest`      |
 | `SET_LOG_LEVEL`         | Optional                                         | Pass `logLevel` prop or runtime message        |
 
 ### SDK → Host (you receive — implement callbacks)
 
-| Event                   | Flutter callback                           | Required?                               |
-| ----------------------- | ------------------------------------------ | --------------------------------------- |
-| `WEBVIEW_READY`         | — (wrapper handles)                        | —                                       |
-| `SESSION_STARTED`       | `onSdkEvent`                               | Optional analytics                      |
-| `AUTH_REQUIRED`         | `onAuthRequired`                           | **Yes** (re-issue session)              |
-| `SESSION_EXPIRED`       | `onSessionExpired`                         | **Yes**                                 |
-| `TOKENS_REFRESHED`      | `onTokensRefreshed`                        | **Recommended** (persist refresh token) |
-| `LOG`                   | `onLog`                                    | Optional                                |
-| `PLATFORM_FEE_REQUEST`  | `onPlatformFeeRequest`                     | If dynamic fee                          |
-| `QUOTE_PREVIEWED`       | `onSdkEvent` / `onQuotePreviewed` (RN/Web) | Optional                                |
-| `TRANSACTION_CONFIRMED` | `onSdkEvent` / `onTransactionConfirmed`    | Optional                                |
-| `NAVIGATION`            | `onSdkEvent` / `onNavigation`              | Optional analytics                      |
-| `PAYMENT_REQUIRED`      | `onPaymentRequired`                        | **Yes** (payment flow)                  |
-| `PAYMENT_PENDING_CLEAR` | — (wrapper internal)                       | —                                       |
-| `PAYMENT_DISMISSED`     | — (wrapper internal)                       | —                                       |
-| `TRANSACTION_COMPLETE`  | `onSuccess`                                | Optional                                |
-| `DELIVERY_COMPLETE`     | `onSdkEvent` / `onDeliveryComplete`        | Optional                                |
-| `CLOSE`                 | `onClose`                                  | **Yes**                                 |
-| `ERROR`                 | `onError`                                  | Recommended                             |
+| Event                   | React Native callback                   | Flutter callback            | Required?                                 |
+| ----------------------- | --------------------------------------- | --------------------------- | ----------------------------------------- |
+| `WEBVIEW_READY`         | — (wrapper handles)                     | — (wrapper handles)         | —                                         |
+| `SESSION_STARTED`       | `onSdkEvent`                            | `onSdkEvent`                | Optional analytics                        |
+| `AUTH_REQUIRED`         | `onAuthRequired`                        | `onAuthRequired`            | **Yes** (re-issue session)                |
+| `SESSION_EXPIRED`       | `onSessionExpired`                      | `onSessionExpired`          | **Yes**                                     |
+| `TOKENS_REFRESHED`      | `onTokensRefreshed`                     | `onTokensRefreshed`         | **Recommended** (persist refresh token)   |
+| `LOG`                   | `onLog`                                 | `onLog`                     | Optional                                  |
+| `PARTNER_FEE_REQUEST`   | `onPartnerFeeRequest`                   | `onPartnerFeeRequest`       | If dynamic fee                            |
+| `QUOTE_PREVIEWED`       | `onQuotePreviewed` / `onSdkEvent`       | `onSdkEvent`                | Optional                                  |
+| `TRANSACTION_CONFIRMED` | `onTransactionConfirmed` / `onSdkEvent` | `onSdkEvent`                | Optional                                  |
+| `NAVIGATION`            | `onNavigation` / `onSdkEvent`           | `onSdkEvent`                | Optional analytics                      |
+| `PAYMENT_REQUIRED`      | `onPaymentRequired`                     | `onPaymentRequired`         | **Yes** (payment flow)                  |
+| `PAYMENT_PENDING_CLEAR` | — (wrapper internal)                    | — (wrapper internal)        | —                                         |
+| `PAYMENT_DISMISSED`     | — (wrapper internal)                    | — (wrapper internal)        | —                                         |
+| `TRANSACTION_COMPLETE`  | `onSuccess`                             | `onSuccess`                 | Optional                                  |
+| `DELIVERY_COMPLETE`     | `onDeliveryComplete` / `onSdkEvent`     | `onSdkEvent`                | Optional                                  |
+| `CLOSE`                 | `onClose`                               | `onClose`                   | **Yes**                                   |
+| `ERROR`                 | `onError`                               | `onError`                   | Recommended                               |
+| `OPEN_EXTERNAL_URL`     | — (wrapper: `Linking.openURL`)          | — (wrapper: `url_launcher`) | **Automatic** — custom WebView hosts only |
 
-> **Catch-all:** `onSdkEvent` (Flutter) receives **every** outbound event as a `Map` if you prefer one handler.
+> **Catch-all:** `onSdkEvent` receives **every** outbound event if you prefer one handler (typed on React Native, `Map` on Flutter).
+
+---
+
+## React Native integration example (all callbacks)
+
+```tsx
+import { useCallback, useState } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { JustGoldConnect, type PaymentRequiredPayload } from '@justgold/rn-sdk';
+
+export function TradingScreen({ initialToken, initialRefreshToken, onDone }: Props) {
+  const [token, setToken] = useState(initialToken);
+  const [refreshToken, setRefreshToken] = useState(initialRefreshToken);
+
+  const reissueSession = useCallback(async () => {
+    const next = await partnerBackend.fetchJustGoldSession();
+    setToken(next.sessionToken);
+    setRefreshToken(next.refreshToken);
+  }, []);
+
+  return (
+    <SafeAreaProvider>
+      <JustGoldConnect
+        token={token}
+        refreshToken={refreshToken}
+        sandbox={false}
+        locale="en"
+        theme={{ mode: 'light', primaryColor: '#2563eb' }}
+        onClose={onDone}
+        onSessionExpired={reissueSession}
+        onAuthRequired={reissueSession}
+        onTokensRefreshed={({ sessionToken, refreshToken: rt }) => {
+          setToken(sessionToken);
+          setRefreshToken(rt);
+        }}
+        onPaymentRequired={(payload: PaymentRequiredPayload, resume) => {
+          navigation.navigate('PartnerPayment', {
+            payload,
+            onDone: () => {
+              navigation.goBack();
+              resume(payload.transactionId); // optional fast-path
+            },
+          });
+        }}
+        onPartnerFeeRequest={async payload => partnerBackend.fetchPlatformFee(payload.operation, payload.metal)}
+        onSuccess={payload => console.log('Transaction complete', payload)}
+        onError={err => console.warn(`SDK [${err.code}]:`, err.message)}
+        onSdkEvent={event => console.log('SDK event', event.type, event.payload)}
+      />
+    </SafeAreaProvider>
+  );
+}
+```
 
 ---
 
@@ -140,8 +196,7 @@ class _TradingScreenState extends State<TradingScreen> {
         debugPrint('[JustGold ${log['level']}] ${log['message']}');
       },
 
-      onPlatformFeeRequest: (payload) async {
-        // Return flat fee in org currency, or null for org default
+      onPartnerFeeRequest: (payload) async {
         return partnerBackend.fetchPlatformFee(
           operation: payload['operation'] as String,
           metal: payload['metal'] as String?,
@@ -191,7 +246,7 @@ Sent by the platform wrapper when the UI is ready (`WEBVIEW_READY`) and when ses
 | `theme`                      | `object`         | No       | See [Theming](#theming-theme-object)                    |
 | `safeAreaInsets`             | `object`         | No       | `{ top, bottom, left, right }` — native only            |
 | `platformFee`                | `number`         | No       | Flat platform fee for preview APIs                      |
-| `useHostPlatformFee`         | `boolean`        | No       | `true` when `onPlatformFeeRequest` is set               |
+| `useHostPartnerFee`          | `boolean`        | No       | `true` when `onPartnerFeeRequest` is set                |
 | `logLevel`                   | `string`         | No       | `debug` \| `info` \| `warn` \| `error`                  |
 | `sessionRenewDelayMs`        | `number`         | No       | **Testing only** — fixed renew delay                    |
 | `resumePaymentTransactionId` | `string`         | No       | **Wrapper internal** — after SDK remount during payment |
@@ -269,23 +324,26 @@ Clear override (use org default / dynamic fetch):
 
 ---
 
-### `PLATFORM_FEE_RESPONSE`
+### `PARTNER_FEE_RESPONSE`
 
-Reply to SDK `PLATFORM_FEE_REQUEST`. **Platform wrappers send this automatically** when you implement `onPlatformFeeRequest` — you normally do not send this yourself.
+Reply to SDK `PARTNER_FEE_REQUEST`. **Platform wrappers send this automatically** when you implement `onPartnerFeeRequest` — you normally do not send this yourself.
 
 ```json
 {
-  "type": "PLATFORM_FEE_RESPONSE",
+  "type": "PARTNER_FEE_RESPONSE",
   "requestId": "550e8400-e29b-41d4-a716-446655440000",
-  "platformFee": 5.0
+  "platformFee": 5.0,
+  "platformFeeTax": 0.25,
+  "mintingFeeToJustGold": 31.5,
+  "mintingFeeToSp": 13.5
 }
 ```
 
-Use `null` to omit override (API org default):
+Use `null` for `platformFee` to omit override (API org default):
 
 ```json
 {
-  "type": "PLATFORM_FEE_RESPONSE",
+  "type": "PARTNER_FEE_RESPONSE",
   "requestId": "550e8400-e29b-41d4-a716-446655440000",
   "platformFee": null
 }
@@ -411,28 +469,63 @@ Structured SDK log line when `logLevel` allows.
 
 ---
 
-### `PLATFORM_FEE_REQUEST`
+### `PARTNER_FEE_REQUEST`
 
-SDK needs platform fee before calling preview API. Respond via `onPlatformFeeRequest` (wrapper sends `PLATFORM_FEE_RESPONSE`).
+SDK needs partner fees before calling preview API. For **delivery**, fires after the user selects an address. Respond via `onPartnerFeeRequest` (wrapper sends `PARTNER_FEE_RESPONSE`).
+
+**Buy / sell:**
 
 ```json
 {
-  "type": "PLATFORM_FEE_REQUEST",
+  "type": "PARTNER_FEE_REQUEST",
   "payload": {
     "requestId": "550e8400-e29b-41d4-a716-446655440000",
     "operation": "buy",
     "metal": "Gold",
-    "amount": "500"
+    "amount": "500",
+    "mintingFee": null,
+    "deliveryFee": null
   }
 }
 ```
 
-| Field       | Values                                   |
-| ----------- | ---------------------------------------- |
-| `operation` | `buy` \| `sell` \| `delivery`            |
-| `metal`     | `Gold` \| `Silver` (buy/sell)            |
-| `amount`    | String amount in org currency (buy/sell) |
-| `quantity`  | String grams (optional)                  |
+**Delivery** (after address selection):
+
+```json
+{
+  "type": "PARTNER_FEE_REQUEST",
+  "payload": {
+    "requestId": "550e8400-e29b-41d4-a716-446655440000",
+    "operation": "delivery",
+    "amount": "1200.00",
+    "mintingFee": 45.0,
+    "deliveryFee": 25.0
+  }
+}
+```
+
+| Field         | Values                                    |
+| ------------- | ----------------------------------------- |
+| `operation`   | `buy` \| `sell` \| `delivery`             |
+| `metal`       | `Gold` \| `Silver` (buy/sell)             |
+| `amount`      | String amount in org currency (optional)  |
+| `mintingFee`  | JustGold total; `null` for buy/sell       |
+| `deliveryFee` | Emirate delivery fee; `null` for buy/sell  |
+
+**React Native:**
+
+```tsx
+onPartnerFeeRequest={async payload => {
+  return {
+    platformFee: 5.0,
+    platformFeeTax: 0.25,
+    mintingFeeToJustGold: 31.5,
+    mintingFeeToSp: 13.5,
+  };
+  // Legacy: return 5.0 for platform fee only
+  // Return null for org default
+}}
+```
 
 ---
 
@@ -544,19 +637,28 @@ In-SDK route changed — useful for analytics.
 
 SDK created a **Pending** transaction. The partner must collect payment and PATCH status via **partner backend HMAC API**.
 
+`amount` is the transaction subtotal **excluding all fees**. **`grandTotal` is what the customer pays** — use this in your payment UI.
+
 ```json
 {
   "type": "PAYMENT_REQUIRED",
   "payload": {
     "transactionId": "674a1b2c3d4e5f6789012345",
     "type": "buy",
-    "amount": 512.5,
+    "amount": 500.0,
+    "grandTotal": 512.5,
     "currency": "AED",
     "metal": "Gold",
-    "quantity": 2.5
+    "quantity": 2.5,
+    "platformFee": 5.0,
+    "platformFeeTax": 0.25,
+    "mintingFee": null,
+    "deliveryFee": null
   }
 }
 ```
+
+Delivery includes the same breakup fields returned from `PARTNER_FEE_RESPONSE`.
 
 | `payload.type` | Partner action                                 |
 | -------------- | ---------------------------------------------- |
@@ -666,6 +768,33 @@ Common `code` values: API error codes from the Partner API, `NETWORK`, validatio
 
 ---
 
+### `OPEN_EXTERNAL_URL`
+
+The SDK UI needs to open a URL **outside** the WebView:
+
+- Invoice PDF (presigned HTTPS URL)
+- Help screen: `mailto:`, `tel:`, `https://wa.me/...`
+
+**React Native and Flutter wrappers handle this automatically** — no partner callback unless you use a custom WebView host.
+
+```json
+{
+  "type": "OPEN_EXTERNAL_URL",
+  "payload": {
+    "url": "mailto:support@justgold.app?subject=Gold%20Investment%20Support"
+  }
+}
+```
+
+| Platform     | Wrapper behaviour                                    |
+| ------------ | ---------------------------------------------------- |
+| React Native | `Linking.openURL(url)`                               |
+| Flutter      | `url_launcher` with `LaunchMode.externalApplication` |
+
+Custom hosts: listen for `OPEN_EXTERNAL_URL` and delegate to native URL APIs. Do **not** load `mailto:` or `tel:` inside the WebView.
+
+---
+
 ## Full-page partner payment (recommended)
 
 1. SDK emits `PAYMENT_REQUIRED` and navigates to an internal pending screen (polls every 2s).
@@ -725,12 +854,17 @@ Used internally by `@justgold/rn-sdk` and `justgold_sdk` to proxy HTTP from the 
 
 ## Theming (`theme` object)
 
-| Field                                              | Description                   |
-| -------------------------------------------------- | ----------------------------- |
-| `mode`                                             | `"light"` or `"dark"`         |
-| `primaryColor`                                     | Brand primary hex             |
-| `brandColor`, `brandDarkColor`, `accentColor`      | Optional palette overrides    |
-| `branding.partnerName`, `logoUrl`, `walletName`, … | White-label labels and assets |
+| Field | Description |
+| --- | --- |
+| `mode` | `"light"` or `"dark"` |
+| `primaryColor` | Brand primary hex |
+| `brandColor`, `brandDarkColor`, `accentColor` | Optional palette overrides |
+| `branding.partnerName` | Partner label in UI copy |
+| `branding.walletName` | Wallet label in payment flows |
+| `branding.logoUrl` | HTTPS partner logo |
+| `branding.supportEmail` | Help screen email (default `support@justgold.app`) |
+| `branding.supportPhone` | Help screen call button (default `+971 589361909`) |
+| `branding.supportWhatsApp` | Help screen WhatsApp (defaults to `supportPhone`) |
 
 ---
 
@@ -746,6 +880,7 @@ import type { SdkSessionConfig, SdkOutboundEvent, PaymentRequiredPayload } from 
 
 ## Related
 
+- [Mobile SDK Quickstart](quickstart.md)
 - [SDK overview](overview.md)
 - [Flutter integration](flutter.md)
 - [React Native integration](react-native.md)

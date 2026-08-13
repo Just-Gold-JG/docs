@@ -11,6 +11,8 @@ JustGold supports two integration methods:
 | [API integration](api/overview.md) | You want full backend control and custom customer-facing screens |
 | [SDK integration](sdk/overview.md) | You want to embed JustGold mobile flows faster in React Native or Flutter |
 
+Mobile partners: start with **[SDK Quickstart](sdk/quickstart.md)** after reading [Session Token](sdk/session-token.md).
+
 ## 2. Get portal access
 
 Obtain access to the JustGold developer portal from your JustGold onboarding contact.
