@@ -328,18 +328,61 @@ Clear override (use org default / dynamic fetch):
 
 Reply to SDK `PARTNER_FEE_REQUEST`. **Platform wrappers send this automatically** when you implement `onPartnerFeeRequest` — you normally do not send this yourself.
 
+The host callback may return:
+
+- A **number** — shorthand for `{ platformFee: number }` (buy/sell only)
+- A **`PartnerFeeBreakup` object** — platform fee plus optional tax and delivery splits
+- **`null`** — omit override; preview API uses org default from `GET /v1/customers/organizations/me`
+
+All monetary fields are **flat amounts in org currency** (not percentages). Omitted or `null` fields are not sent to the preview API.
+
+#### Field reference (`PartnerFeeBreakup`)
+
+| Field | Buy / sell | Delivery | Description |
+| --- | --- | --- | --- |
+| `platformFee` | Yes | Yes | Flat platform fee override for preview |
+| `platformFeeTax` | Optional | Optional | Tax on platform fee |
+| `mintingFee` | — | Optional | Echo of request total (auto-filled if omitted) |
+| `deliveryFee` | — | Optional | Echo of request total (auto-filled if omitted) |
+| `mintingFeeToJustGold` | — | Optional | Minting portion retained by JustGold |
+| `mintingFeeToJustGoldTax` | — | Optional | Tax on JustGold minting portion |
+| `mintingFeeToSp` | — | Optional | Minting portion to service provider |
+| `mintingFeeToSpTax` | — | Optional | Tax on SP minting portion |
+| `deliveryFeeToJustGold` | — | Optional | Delivery portion retained by JustGold |
+| `deliveryFeeToJustGoldTax` | — | Optional | Tax on JustGold delivery portion |
+| `deliveryFeeToSp` | — | Optional | Delivery portion to service provider |
+| `deliveryFeeToSpTax` | — | Optional | Tax on SP delivery portion |
+
+#### Buy — response (platform fee only)
+
+Matching request: `operation: "buy"`, `metal: "Gold"`, `amount: "500"`.
+
 ```json
 {
   "type": "PARTNER_FEE_RESPONSE",
   "requestId": "550e8400-e29b-41d4-a716-446655440000",
   "platformFee": 5.0,
   "platformFeeTax": 0.25,
-  "mintingFeeToJustGold": 31.5,
-  "mintingFeeToSp": 13.5
+  "mintingFee": null,
+  "deliveryFee": null,
+  "mintingFeeToJustGold": null,
+  "mintingFeeToJustGoldTax": null,
+  "mintingFeeToSp": null,
+  "mintingFeeToSpTax": null,
+  "deliveryFeeToJustGold": null,
+  "deliveryFeeToJustGoldTax": null,
+  "deliveryFeeToSp": null,
+  "deliveryFeeToSpTax": null
 }
 ```
 
-Use `null` for `platformFee` to omit override (API org default):
+Shorthand (wrapper normalizes to `{ platformFee: 5.0 }`):
+
+```tsx
+onPartnerFeeRequest={async () => 5.0}
+```
+
+Use org default (omit override on preview):
 
 ```json
 {
@@ -348,6 +391,54 @@ Use `null` for `platformFee` to omit override (API org default):
   "platformFee": null
 }
 ```
+
+#### Sell — response (platform fee only)
+
+Same shape as buy. Only `platformFee` / `platformFeeTax` are typically set; all minting/delivery fields are `null`.
+
+```json
+{
+  "type": "PARTNER_FEE_RESPONSE",
+  "requestId": "661f9511-f39c-52e5-b827-557766551111",
+  "platformFee": 4.0,
+  "platformFeeTax": 0.2,
+  "mintingFee": null,
+  "deliveryFee": null,
+  "mintingFeeToJustGold": null,
+  "mintingFeeToJustGoldTax": null,
+  "mintingFeeToSp": null,
+  "mintingFeeToSpTax": null,
+  "deliveryFeeToJustGold": null,
+  "deliveryFeeToJustGoldTax": null,
+  "deliveryFeeToSp": null,
+  "deliveryFeeToSpTax": null
+}
+```
+
+#### Delivery — response (full breakup)
+
+Matching request: `operation: "delivery"`, `mintingFee: 45.0`, `deliveryFee: 25.0`.
+
+```json
+{
+  "type": "PARTNER_FEE_RESPONSE",
+  "requestId": "772g0622-g40d-63f6-c938-668877662222",
+  "platformFee": 7.5,
+  "platformFeeTax": 0.38,
+  "mintingFee": 45.0,
+  "deliveryFee": 25.0,
+  "mintingFeeToJustGold": 31.5,
+  "mintingFeeToJustGoldTax": 1.58,
+  "mintingFeeToSp": 13.5,
+  "mintingFeeToSpTax": 0.67,
+  "deliveryFeeToJustGold": 17.5,
+  "deliveryFeeToJustGoldTax": 0.88,
+  "deliveryFeeToSp": 7.5,
+  "deliveryFeeToSpTax": 0.38
+}
+```
+
+If you omit `mintingFee` / `deliveryFee` in the response, the SDK echoes the totals from the request automatically.
 
 ---
 
@@ -471,9 +562,35 @@ Structured SDK log line when `logLevel` allows.
 
 ### `PARTNER_FEE_REQUEST`
 
-SDK needs partner fees before calling preview API. For **delivery**, fires after the user selects an address. Respond via `onPartnerFeeRequest` (wrapper sends `PARTNER_FEE_RESPONSE`).
+SDK needs partner fees **before** calling the preview API (`POST /v1/buy/preview`, `/v1/sell/preview`, or `/v1/delivery/preview`). Respond via `onPartnerFeeRequest`; the wrapper sends `PARTNER_FEE_RESPONSE` automatically.
 
-**Buy / sell:**
+| When it fires | Operation |
+| --- | --- |
+| User taps preview on buy screen | `buy` |
+| User taps preview on sell screen | `sell` |
+| User selects delivery address and previews cart | `delivery` |
+
+Timeout: **8 seconds**. If the host does not respond, throws, or returns `null`, the SDK omits `platformFee` on preview and the API uses the org default.
+
+#### Field reference (request payload)
+
+| Field | Buy | Sell | Delivery | Description |
+| --- | --- | --- | --- | --- |
+| `requestId` | Yes | Yes | Yes | Correlate with `PARTNER_FEE_RESPONSE` |
+| `operation` | `"buy"` | `"sell"` | `"delivery"` | Which preview API follows |
+| `metal` | Yes | Yes | — | `"Gold"` or `"Silver"` |
+| `amount` | Optional | Optional | Optional | Order amount in org currency (string) |
+| `quantity` | Optional | Optional | — | Metal quantity in grams (string) |
+| `mintingFee` | `null` | `null` | number | JustGold-computed minting total |
+| `deliveryFee` | `null` | `null` | number | Emirate delivery fee from org settings |
+
+For buy/sell, the user enters either `amount` **or** `quantity` — whichever they typed in the SDK UI.
+
+---
+
+#### Buy — request
+
+Customer buying **AED 500** of gold:
 
 ```json
 {
@@ -489,13 +606,73 @@ SDK needs partner fees before calling preview API. For **delivery**, fires after
 }
 ```
 
-**Delivery** (after address selection):
+Customer buying by **grams** (2.5 g silver):
 
 ```json
 {
   "type": "PARTNER_FEE_REQUEST",
   "payload": {
-    "requestId": "550e8400-e29b-41d4-a716-446655440000",
+    "requestId": "550e8400-e29b-41d4-a716-446655440001",
+    "operation": "buy",
+    "metal": "Silver",
+    "quantity": "2.5",
+    "mintingFee": null,
+    "deliveryFee": null
+  }
+}
+```
+
+**Typical host response:** see [Buy — `PARTNER_FEE_RESPONSE`](#buy--response-platform-fee-only).
+
+---
+
+#### Sell — request
+
+Customer selling **AED 480** equivalent of gold:
+
+```json
+{
+  "type": "PARTNER_FEE_REQUEST",
+  "payload": {
+    "requestId": "661f9511-f39c-52e5-b827-557766551111",
+    "operation": "sell",
+    "metal": "Gold",
+    "amount": "480",
+    "mintingFee": null,
+    "deliveryFee": null
+  }
+}
+```
+
+Customer selling by **grams**:
+
+```json
+{
+  "type": "PARTNER_FEE_REQUEST",
+  "payload": {
+    "requestId": "661f9511-f39c-52e5-b827-557766551112",
+    "operation": "sell",
+    "metal": "Gold",
+    "quantity": "10.5",
+    "mintingFee": null,
+    "deliveryFee": null
+  }
+}
+```
+
+**Typical host response:** see [Sell — `PARTNER_FEE_RESPONSE`](#sell--response-platform-fee-only).
+
+---
+
+#### Delivery — request
+
+Fires **after the customer selects a delivery address**. Includes JustGold-computed minting and emirate delivery totals so your backend can split fees for accounting.
+
+```json
+{
+  "type": "PARTNER_FEE_REQUEST",
+  "payload": {
+    "requestId": "772g0622-g40d-63f6-c938-668877662222",
     "operation": "delivery",
     "amount": "1200.00",
     "mintingFee": 45.0,
@@ -504,27 +681,52 @@ SDK needs partner fees before calling preview API. For **delivery**, fires after
 }
 ```
 
-| Field         | Values                                    |
-| ------------- | ----------------------------------------- |
-| `operation`   | `buy` \| `sell` \| `delivery`             |
-| `metal`       | `Gold` \| `Silver` (buy/sell)             |
-| `amount`      | String amount in org currency (optional)  |
-| `mintingFee`  | JustGold total; `null` for buy/sell       |
-| `deliveryFee` | Emirate delivery fee; `null` for buy/sell  |
+No `metal` or `quantity` on delivery requests — the cart may contain multiple products.
+
+**Typical host response:** see [Delivery — `PARTNER_FEE_RESPONSE`](#delivery--response-full-breakup).
+
+---
+
+#### Host callback examples
 
 **React Native:**
 
 ```tsx
 onPartnerFeeRequest={async payload => {
-  return {
-    platformFee: 5.0,
-    platformFeeTax: 0.25,
-    mintingFeeToJustGold: 31.5,
-    mintingFeeToSp: 13.5,
-  };
-  // Legacy: return 5.0 for platform fee only
-  // Return null for org default
+  if (payload.operation === 'delivery') {
+    return {
+      platformFee: 7.5,
+      platformFeeTax: 0.38,
+      mintingFeeToJustGold: 31.5,
+      mintingFeeToSp: 13.5,
+      deliveryFeeToJustGold: 17.5,
+      deliveryFeeToSp: 7.5,
+    };
+  }
+  // buy / sell — flat platform fee or null for org default
+  return await yourBackend.fetchPlatformFee(payload.operation, payload.metal);
 }}
+```
+
+**Flutter:**
+
+```dart
+onPartnerFeeRequest: (payload) async {
+  if (payload['operation'] == 'delivery') {
+    return {
+      'platformFee': 7.5,
+      'platformFeeTax': 0.38,
+      'mintingFeeToJustGold': 31.5,
+      'mintingFeeToSp': 13.5,
+      'deliveryFeeToJustGold': 17.5,
+      'deliveryFeeToSp': 7.5,
+    };
+  }
+  return yourBackend.fetchPlatformFee(
+    operation: payload['operation'] as String,
+    metal: payload['metal'] as String?,
+  );
+},
 ```
 
 ---
@@ -635,9 +837,49 @@ In-SDK route changed — useful for analytics.
 
 ### `PAYMENT_REQUIRED`
 
-SDK created a **Pending** transaction. The partner must collect payment and PATCH status via **partner backend HMAC API**.
+SDK created a **Pending** transaction after the customer confirmed a quote. The partner must complete payment (or payout for sell) and PATCH status via **partner backend HMAC API**.
 
-`amount` is the transaction subtotal **excluding all fees**. **`grandTotal` is what the customer pays** — use this in your payment UI.
+#### Amount fields
+
+| Field | Meaning |
+| --- | --- |
+| `amount` | Transaction **subtotal** excluding platform fee, tax, minting, and delivery |
+| `grandTotal` | **Buy / delivery:** total to **charge** the customer. **Sell:** net **payout** to the customer after fees |
+| `platformFee` / `platformFeeTax` | Platform fee and tax from partner fee breakup (when set) |
+| `mintingFee` / `deliveryFee` | Totals (delivery only; `null` for buy/sell) |
+| `mintingFeeToJustGold`, `mintingFeeToSp`, … | Partner accounting splits (delivery only; `null` for buy/sell) |
+
+Fee breakup fields on `PAYMENT_REQUIRED` mirror the last `PARTNER_FEE_RESPONSE` for that session. When no dynamic fee was supplied, optional fields may be omitted or `null`.
+
+#### Field reference (payload)
+
+| Field | Buy | Sell | Delivery | Type |
+| --- | --- | --- | --- | --- |
+| `transactionId` | Yes | Yes | Yes | string |
+| `type` | `"buy"` | `"sell"` | `"delivery"` | string |
+| `amount` | Yes | Yes | Yes | number |
+| `grandTotal` | Yes | Yes | Yes | number |
+| `currency` | Yes | Yes | Yes | string |
+| `metal` | Yes | Yes | Yes | `"Gold"` \| `"Silver"` (delivery: first cart item) |
+| `quantity` | Yes | Yes | Yes | number (grams) |
+| `platformFee` | Optional | Optional | Optional | number \| null |
+| `platformFeeTax` | Optional | Optional | Optional | number \| null |
+| `mintingFee` | `null` | `null` | Optional | number \| null |
+| `deliveryFee` | `null` | `null` | Optional | number \| null |
+| `mintingFeeToJustGold` | `null` | `null` | Optional | number \| null |
+| `mintingFeeToJustGoldTax` | `null` | `null` | Optional | number \| null |
+| `mintingFeeToSp` | `null` | `null` | Optional | number \| null |
+| `mintingFeeToSpTax` | `null` | `null` | Optional | number \| null |
+| `deliveryFeeToJustGold` | `null` | `null` | Optional | number \| null |
+| `deliveryFeeToJustGoldTax` | `null` | `null` | Optional | number \| null |
+| `deliveryFeeToSp` | `null` | `null` | Optional | number \| null |
+| `deliveryFeeToSpTax` | `null` | `null` | Optional | number \| null |
+
+---
+
+#### Buy — request (SDK → host)
+
+Customer confirmed a gold buy. **Collect `grandTotal` from the customer.**
 
 ```json
 {
@@ -646,38 +888,150 @@ SDK created a **Pending** transaction. The partner must collect payment and PATC
     "transactionId": "674a1b2c3d4e5f6789012345",
     "type": "buy",
     "amount": 500.0,
-    "grandTotal": 512.5,
+    "grandTotal": 505.25,
     "currency": "AED",
     "metal": "Gold",
     "quantity": 2.5,
     "platformFee": 5.0,
     "platformFeeTax": 0.25,
     "mintingFee": null,
-    "deliveryFee": null
+    "deliveryFee": null,
+    "mintingFeeToJustGold": null,
+    "mintingFeeToJustGoldTax": null,
+    "mintingFeeToSp": null,
+    "mintingFeeToSpTax": null,
+    "deliveryFeeToJustGold": null,
+    "deliveryFeeToJustGoldTax": null,
+    "deliveryFeeToSp": null,
+    "deliveryFeeToSpTax": null
   }
 }
 ```
 
-Delivery includes the same breakup fields returned from `PARTNER_FEE_RESPONSE`.
+**Partner action:** collect **AED 505.25** → backend `PATCH` with `"status": "Completed"`.
 
-| `payload.type` | Partner action                                 |
-| -------------- | ---------------------------------------------- |
-| `buy`          | Collect payment → PATCH `Completed` / `Failed` |
-| `sell`         | Confirm payout / bank credit → PATCH status    |
-| `delivery`     | Collect delivery payment → PATCH status        |
+---
 
-**Partner backend (HMAC — not from mobile SDK):**
+#### Sell — request (SDK → host)
+
+Customer confirmed a gold sell. **`grandTotal` is the net payout** (subtotal minus platform fee and tax).
+
+```json
+{
+  "type": "PAYMENT_REQUIRED",
+  "payload": {
+    "transactionId": "674a1b2c3d4e5f6789012346",
+    "type": "sell",
+    "amount": 480.0,
+    "grandTotal": 474.75,
+    "currency": "AED",
+    "metal": "Gold",
+    "quantity": 10.5,
+    "platformFee": 4.0,
+    "platformFeeTax": 0.2,
+    "mintingFee": null,
+    "deliveryFee": null,
+    "mintingFeeToJustGold": null,
+    "mintingFeeToJustGoldTax": null,
+    "mintingFeeToSp": null,
+    "mintingFeeToSpTax": null,
+    "deliveryFeeToJustGold": null,
+    "deliveryFeeToJustGoldTax": null,
+    "deliveryFeeToSp": null,
+    "deliveryFeeToSpTax": null
+  }
+}
+```
+
+**Partner action:** credit **AED 474.75** to the customer's wallet / bank → backend `PATCH` with `"status": "Completed"`.
+
+---
+
+#### Delivery — request (SDK → host)
+
+Customer confirmed a physical delivery order. **Collect `grandTotal`** (includes minting, delivery, platform fee, and tax).
+
+```json
+{
+  "type": "PAYMENT_REQUIRED",
+  "payload": {
+    "transactionId": "674a1b2c3d4e5f6789012347",
+    "type": "delivery",
+    "amount": 1200.0,
+    "grandTotal": 1278.51,
+    "currency": "AED",
+    "metal": "Gold",
+    "quantity": 15.0,
+    "platformFee": 7.5,
+    "platformFeeTax": 0.38,
+    "mintingFee": 45.0,
+    "deliveryFee": 25.0,
+    "mintingFeeToJustGold": 31.5,
+    "mintingFeeToJustGoldTax": 1.58,
+    "mintingFeeToSp": 13.5,
+    "mintingFeeToSpTax": 0.67,
+    "deliveryFeeToJustGold": 17.5,
+    "deliveryFeeToJustGoldTax": 0.88,
+    "deliveryFeeToSp": 7.5,
+    "deliveryFeeToSpTax": 0.38
+  }
+}
+```
+
+**Partner action:** collect **AED 1278.51** → backend `PATCH` with `"status": "Completed"`.
+
+---
+
+#### Partner backend response (HMAC — not from mobile SDK)
+
+After your payment UI completes, **your backend** updates transaction status:
 
 ```http
 PATCH /v1/transactions/674a1b2c3d4e5f6789012345
 Content-Type: application/json
-Authorization: Bearer <HMAC headers>
+X-Client-Id: jg_partner_123
+X-Timestamp: 1767225600
+X-Signature: <hmac_signature>
 
 {
   "status": "Completed",
   "paymentReference": "partner-psp-ref-12345",
   "paymentMethod": "bank_transfer"
 }
+```
+
+| Status | When to send |
+| --- | --- |
+| `Completed` | Payment collected (buy/delivery) or payout sent (sell) |
+| `Failed` | Payment or payout failed |
+
+The SDK polls `GET /transactions/:id` every 2s while your payment screen is open. Close your payment UI after PATCH — the SDK shows success or failure automatically.
+
+**React Native:**
+
+```tsx
+onPaymentRequired={(payload, resume) => {
+  navigation.navigate('PartnerPayment', {
+    chargeAmount: payload.grandTotal,
+    payload,
+    onDone: () => navigation.goBack(),
+  });
+}}
+```
+
+**Flutter:**
+
+```dart
+onPaymentRequired: (payload, resume) {
+  Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (_) => PartnerPaymentPage(
+        chargeAmount: payload.grandTotal,
+        payload: payload,
+      ),
+    ),
+  );
+},
 ```
 
 ---
