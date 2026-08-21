@@ -12,6 +12,30 @@ Some host → SDK messages omit `payload` (e.g. `PAYMENT_RESULT` uses top-level 
 
 ---
 
+## Trading amounts & metal breakdown
+
+Buy and sell involve a **single metal**. Delivery carts may include **both gold and silver**.
+
+| Pattern | Buy / sell | Delivery |
+| --- | --- | --- |
+| Single metal | `metal`, `amount`, `quantity` on the payload | Top-level `metal` / `quantity` are **legacy aggregates** (first cart item metal + total grams) |
+| Per-metal detail | — | `metalSummary` with lowercase keys `gold` and/or `silver` |
+| Charge amount | Use `grandTotal` on `PAYMENT_REQUIRED` | Same — `metalSummary` does not replace order totals |
+
+Each `metalSummary` entry (mirrors API `metalSummary`):
+
+| Field | Description |
+| --- | --- |
+| `quantity` | Total grams of that metal in the order |
+| `amount` | Metal purchase cost (`purchaseCost` from the preview API) |
+| `vaultQuantityUsed` | Grams redeemed from the customer's vault (optional) |
+| `quantityToPurchase` | Grams purchased at spot (optional) |
+| `quotedPrice` | Buy price per gram for that metal (optional) |
+
+On buy/sell events, the SDK always sends **both** `amount` and `quantity` (strings on fee requests, numbers on quote/confirm/complete events). If the customer entered only one value in the UI, the SDK derives the other from the live buy/sell price.
+
+---
+
 ## Quick reference
 
 ### Host → SDK (you send — wrappers send most of these automatically)
@@ -579,18 +603,20 @@ Timeout: **8 seconds**. If the host does not respond, throws, or returns `null`,
 | `requestId` | Yes | Yes | Yes | Correlate with `PARTNER_FEE_RESPONSE` |
 | `operation` | `"buy"` | `"sell"` | `"delivery"` | Which preview API follows |
 | `metal` | Yes | Yes | — | `"Gold"` or `"Silver"` |
-| `amount` | Optional | Optional | Optional | Order amount in org currency (string) |
-| `quantity` | Optional | Optional | — | Metal quantity in grams (string) |
+| `amount` | Yes | Yes | Optional | Order amount in org currency (string). Buy/sell: always present. |
+| `quantity` | Yes | Yes | — | Metal quantity in grams (string). Buy/sell: always present. |
 | `mintingFee` | `null` | `null` | number | JustGold-computed minting total |
 | `deliveryFee` | `null` | `null` | number | Emirate delivery fee from org settings |
 
-For buy/sell, the user enters either `amount` **or** `quantity` — whichever they typed in the SDK UI.
+For buy/sell, the SDK sends **both** `amount` and `quantity`. The customer may enter either in the UI; the SDK computes the complementary value from the live price before emitting this event.
+
+For delivery, `metal` and per-metal amounts are not on the fee request — use `mintingFee` / `deliveryFee` totals. Per-metal breakdown appears on `QUOTE_PREVIEWED`, `TRANSACTION_CONFIRMED`, and `PAYMENT_REQUIRED` after preview.
 
 ---
 
 #### Buy — request
 
-Customer buying **AED 500** of gold:
+Customer buying **AED 500** of gold (customer entered amount; SDK also sends computed grams):
 
 ```json
 {
@@ -600,13 +626,14 @@ Customer buying **AED 500** of gold:
     "operation": "buy",
     "metal": "Gold",
     "amount": "500",
+    "quantity": "1.666",
     "mintingFee": null,
     "deliveryFee": null
   }
 }
 ```
 
-Customer buying by **grams** (2.5 g silver):
+Customer buying by **grams** (2.5 g silver; SDK also sends computed amount):
 
 ```json
 {
@@ -615,6 +642,7 @@ Customer buying by **grams** (2.5 g silver):
     "requestId": "550e8400-e29b-41d4-a716-446655440001",
     "operation": "buy",
     "metal": "Silver",
+    "amount": "200.00",
     "quantity": "2.5",
     "mintingFee": null,
     "deliveryFee": null
@@ -638,6 +666,7 @@ Customer selling **AED 480** equivalent of gold:
     "operation": "sell",
     "metal": "Gold",
     "amount": "480",
+    "quantity": "1.6",
     "mintingFee": null,
     "deliveryFee": null
   }
@@ -653,6 +682,7 @@ Customer selling by **grams**:
     "requestId": "661f9511-f39c-52e5-b827-557766551112",
     "operation": "sell",
     "metal": "Gold",
+    "amount": "3150.00",
     "quantity": "10.5",
     "mintingFee": null,
     "deliveryFee": null
@@ -681,7 +711,7 @@ Fires **after the customer selects a delivery address**. Includes JustGold-compu
 }
 ```
 
-No `metal` or `quantity` on delivery requests — the cart may contain multiple products.
+No `metal` or per-metal `quantity` on delivery fee requests — the cart may contain multiple products and metals. Per-metal breakdown is on later events (`metalSummary`).
 
 **Typical host response:** see [Delivery — `PARTNER_FEE_RESPONSE`](#delivery--response-full-breakup).
 
@@ -745,13 +775,20 @@ Preview API succeeded.
     "quoteId": "q_buy_abc123",
     "metal": "Gold",
     "amount": 512.5,
+    "quantity": 1.666,
     "platformFee": 5.0,
     "currency": "AED"
   }
 }
 ```
 
-**Delivery example:**
+| Field | Buy / sell | Delivery |
+| --- | --- | --- |
+| `amount` | Quote grand total (includes fees) | Order `grandTotal` |
+| `quantity` | Grams traded | Total grams (all metals) — legacy aggregate |
+| `metalSummary` | — | Per-metal `gold` / `silver` breakdown (see [Trading amounts](#trading-amounts--metal-breakdown)) |
+
+**Delivery example (mixed gold + silver cart):**
 
 ```json
 {
@@ -760,6 +797,22 @@ Preview API succeeded.
     "operation": "delivery",
     "quoteId": "q_del_xyz789",
     "amount": 1250.0,
+    "quantity": 15.0,
+    "metalSummary": {
+      "gold": {
+        "quantity": 10.0,
+        "amount": 800.0,
+        "vaultQuantityUsed": 2.0,
+        "quantityToPurchase": 8.0,
+        "quotedPrice": 100.0
+      },
+      "silver": {
+        "quantity": 5.0,
+        "amount": 400.0,
+        "quantityToPurchase": 5.0,
+        "quotedPrice": 80.0
+      }
+    },
     "platformFee": 7.5,
     "currency": "AED"
   }
@@ -782,6 +835,7 @@ Buy/sell/delivery confirm created a transaction (usually `Pending` for native pa
     "type": "buy",
     "status": "Pending",
     "amount": 512.5,
+    "quantity": 1.666,
     "currency": "AED"
   }
 }
@@ -797,6 +851,7 @@ Buy/sell/delivery confirm created a transaction (usually `Pending` for native pa
     "type": "sell",
     "status": "Pending",
     "amount": 480.0,
+    "quantity": 10.5,
     "currency": "AED"
   }
 }
@@ -812,10 +867,28 @@ Buy/sell/delivery confirm created a transaction (usually `Pending` for native pa
     "type": "delivery",
     "status": "Pending",
     "amount": 1250.0,
-    "currency": "AED"
+    "quantity": 15.0,
+    "currency": "AED",
+    "metalSummary": {
+      "gold": {
+        "quantity": 10.0,
+        "amount": 800.0,
+        "vaultQuantityUsed": 2.0,
+        "quantityToPurchase": 8.0,
+        "quotedPrice": 100.0
+      },
+      "silver": {
+        "quantity": 5.0,
+        "amount": 400.0,
+        "quantityToPurchase": 5.0,
+        "quotedPrice": 80.0
+      }
+    }
   }
 }
 ```
+
+`amount` is the transaction grand total (includes fees). For delivery, prefer `metalSummary` over top-level `metal` / `quantity` when the cart mixes metals.
 
 ---
 
@@ -860,8 +933,9 @@ Fee breakup fields on `PAYMENT_REQUIRED` mirror the last `PARTNER_FEE_RESPONSE` 
 | `amount` | Yes | Yes | Yes | number |
 | `grandTotal` | Yes | Yes | Yes | number |
 | `currency` | Yes | Yes | Yes | string |
-| `metal` | Yes | Yes | Yes | `"Gold"` \| `"Silver"` (delivery: first cart item) |
-| `quantity` | Yes | Yes | Yes | number (grams) |
+| `metal` | Yes | Yes | Yes | `"Gold"` \| `"Silver"`. Delivery: first cart item (legacy); prefer `metalSummary`. |
+| `quantity` | Yes | Yes | Yes | number (grams). Delivery: total grams (legacy); prefer `metalSummary`. |
+| `metalSummary` | — | — | Yes | Per-metal `gold` / `silver` breakdown (delivery only) |
 | `platformFee` | Optional | Optional | Optional | number \| null |
 | `platformFeeTax` | Optional | Optional | Optional | number \| null |
 | `mintingFee` | `null` | `null` | Optional | number \| null |
@@ -962,6 +1036,21 @@ Customer confirmed a physical delivery order. **Collect `grandTotal`** (includes
     "currency": "AED",
     "metal": "Gold",
     "quantity": 15.0,
+    "metalSummary": {
+      "gold": {
+        "quantity": 10.0,
+        "amount": 800.0,
+        "vaultQuantityUsed": 2.0,
+        "quantityToPurchase": 8.0,
+        "quotedPrice": 100.0
+      },
+      "silver": {
+        "quantity": 5.0,
+        "amount": 400.0,
+        "quantityToPurchase": 5.0,
+        "quotedPrice": 80.0
+      }
+    },
     "platformFee": 7.5,
     "platformFeeTax": 0.38,
     "mintingFee": 45.0,
@@ -1069,12 +1158,13 @@ Buy or sell reached terminal success (result screen).
   "payload": {
     "txnId": "674a1b2c3d4e5f6789012345",
     "type": "buy",
-    "amount": 512.5
+    "amount": 512.5,
+    "quantity": 1.666
   }
 }
 ```
 
-Maps to Flutter `onSuccess`.
+Maps to Flutter `onSuccess` and React Native `onSuccess`. Delivery uses `DELIVERY_COMPLETE` instead — there is no `TRANSACTION_COMPLETE` for delivery.
 
 ---
 
@@ -1227,7 +1317,12 @@ Used internally by `@justgold/rn-sdk` and `justgold_sdk` to proxy HTTP from the 
 Import shared types from `@justgold/sdk-bridge`:
 
 ```ts
-import type { SdkSessionConfig, SdkOutboundEvent, PaymentRequiredPayload } from '@justgold/sdk-bridge';
+import type {
+  SdkSessionConfig,
+  SdkOutboundEvent,
+  PaymentRequiredPayload,
+  DeliveryMetalBridgeSummary,
+} from '@justgold/sdk-bridge';
 ```
 
 ---

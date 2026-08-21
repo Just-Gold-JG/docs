@@ -279,6 +279,8 @@ class PartnerPaymentPage extends StatelessWidget {
 
 Use `payload.grandTotal` (not `amount`) as the charge amount — `amount` is the subtotal excluding fees.
 
+For **delivery** with mixed metals, read per-metal detail from `payload.metalSummary` — see [Bridge events](sdk/bridge-events.md#trading-amounts--metal-breakdown).
+
 Full payment guide: [React Native — payment](sdk/react-native.md#payment-handoff) · [Flutter — payment](sdk/flutter.md#payment-handoff)
 
 ---

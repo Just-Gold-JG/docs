@@ -326,7 +326,7 @@ Charge **`grandTotal`**, not `amount`. The `amount` field is the subtotal exclud
 | `onLog` | Structured log map |
 | `onSdkEvent` | Catch-all outbound event as `Map` |
 
-Payment payload fields: `transactionId`, `type` (`buy` \| `sell` \| `delivery`), `amount` (subtotal), `grandTotal` (charge amount), `currency`, `metal`, `quantity`, plus optional fee breakup fields.
+Payment payload fields: `transactionId`, `type` (`buy` \| `sell` \| `delivery`), `amount` (subtotal), `grandTotal` (charge amount), `currency`, `metal`, `quantity`, plus optional fee breakup fields. **Delivery** also includes `metalSummary` with per-metal `gold` / `silver` entries (`quantity` + `amount`) when the cart mixes metals — see [Bridge events](sdk/bridge-events.md#trading-amounts--metal-breakdown).
 
 ---
 

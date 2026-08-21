@@ -279,6 +279,8 @@ export function PartnerPaymentScreen({ payload, onDone }: Props) {
 
 Charge the customer **`grandTotal`**, not `amount`. The `amount` field is the subtotal excluding fees.
 
+For **delivery** orders with both gold and silver, use `payload.metalSummary.gold` and `payload.metalSummary.silver` for per-metal grams and metal value. Top-level `metal` / `quantity` remain for backward compatibility.
+
 ---
 
 ## 6. Component props

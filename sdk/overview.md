@@ -155,6 +155,8 @@ Host app  ──prop update / reply──▶  Native bridge  ──postMessage�
 
 Use `onSdkEvent` to receive optional events such as `QUOTE_PREVIEWED`, `TRANSACTION_CONFIRMED`, `NAVIGATION`, and `DELIVERY_COMPLETE`.
 
+Trading events include **`amount` and `quantity`** for buy/sell. Delivery adds **`metalSummary`** (`gold` / `silver` each with `quantity` and `amount`) when the cart can mix metals — see [Bridge events](sdk/bridge-events.md#trading-amounts--metal-breakdown).
+
 See **[Bridge events & payloads](sdk/bridge-events.md)** for every event with JSON examples.
 
 ### Host → SDK messages
