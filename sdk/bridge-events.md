@@ -2,7 +2,7 @@
 
 All platforms use the same JSON message envelope. Platform wrappers (`justgold_sdk`, `@justgold/rn-sdk`) translate bridge messages into typed callbacks — partners normally implement **callbacks**, not raw `postMessage`.
 
-**Current SDK version:** 1.1.0
+**Current SDK version:** 1.1.1
 
 ```json
 { "type": "EVENT_NAME", "payload": {} }
@@ -47,6 +47,7 @@ On buy/sell events, the SDK always sends **both** `amount` and `quantity` (strin
 | `UPDATE_PLATFORM_FEE`   | Optional runtime fee change                      | `setPlatformFee` (ref API where exposed)       |
 | `PARTNER_FEE_RESPONSE`  | Only if custom host (not using wrapper callback) | Wrapper handles via `onPartnerFeeRequest`      |
 | `SET_LOG_LEVEL`         | Optional                                         | Pass `logLevel` prop or runtime message        |
+| `GO_TO_ROUTE`           | Optional deep link into an SDK screen            | `goToRoute(route)` (RN ref / Flutter state)    |
 
 ### SDK → Host (you receive — implement callbacks)
 
@@ -472,6 +473,16 @@ If you omit `mintingFee` / `deliveryFee` in the response, the SDK echoes the tot
 { "type": "SET_LOG_LEVEL", "level": "debug" }
 ```
 
+### `GO_TO_ROUTE`
+
+Open an allowlisted in-SDK hash route. Unknown paths are ignored.
+
+```json
+{ "type": "GO_TO_ROUTE", "route": "/delivery" }
+```
+
+React Native: `connectRef.current?.goToRoute('/delivery')`. Flutter: `connectKey.currentState?.goToRoute('/delivery')`.
+
 ---
 
 ## SDK → Host events
@@ -888,7 +899,19 @@ Buy/sell/delivery confirm created a transaction (usually `Pending` for native pa
 }
 ```
 
-`amount` is the transaction grand total (includes fees). For delivery, prefer `metalSummary` over top-level `metal` / `quantity` when the cart mixes metals.
+#### Field reference (payload)
+
+| Field | Buy | Sell | Delivery | Description |
+| --- | --- | --- | --- | --- |
+| `transactionId` | Yes | Yes | Yes | Pending transaction id |
+| `type` | `"buy"` | `"sell"` | `"delivery"` | Flow type |
+| `status` | Yes | Yes | Yes | `"Pending"`, `"Completed"`, or `"Failed"` |
+| `amount` | Yes | Yes | Yes | Grand total (includes fees and tax) |
+| `quantity` | Yes | Yes | Yes | Grams traded (delivery: total grams — legacy aggregate) |
+| `currency` | Yes | Yes | Yes | Org currency code |
+| `metalSummary` | — | — | Yes | Per-metal `gold` / `silver` breakdown (see [Trading amounts](#trading-amounts--metal-breakdown)) |
+
+For delivery, prefer `metalSummary` over top-level `metal` / `quantity` when the cart mixes metals.
 
 ---
 
@@ -1302,10 +1325,14 @@ Used internally by `@justgold/rn-sdk` and `justgold_sdk` to proxy HTTP from the 
 | --- | --- |
 | `mode` | `"light"` or `"dark"` |
 | `primaryColor` | Brand primary hex |
-| `brandColor`, `brandDarkColor`, `accentColor` | Optional palette overrides |
-| `branding.partnerName` | Partner label in UI copy |
-| `branding.walletName` | Wallet label in payment flows |
-| `branding.logoUrl` | HTTPS partner logo |
+| `brandColor`, `brandDarkColor`, `accentColor`, `gradientEndColor`, `primaryLightColor`, `buyColor`, `sellColor`, `chartLineColor`, `chartTooltipColor` | Optional palette overrides |
+| `textColor`, `textMutedColor`, `headingColor` | Body, secondary, and amount/label colours (defaults from `brandDarkColor`) |
+| `backgroundColor`, `surfaceColor`, `borderColor` | Page, card, and border colours |
+| `fontFamily` | CSS font family. SDK UI bundles **du Co Headline 16** (Light / Regular / Bold). Pass `"du Co Headline 16"` to use the bundled font; omit for SDK default (Inter). |
+| `branding.partnerName` | Partner label in UI copy. When omitted, SDK uses org name from `GET /v1/customers/organizations/me` |
+| `branding.walletName` | Wallet label in payment flows. Defaults to `"{partnerName} Wallet"` |
+| `branding.logoUrl` | HTTPS URL for partner logo |
+| `branding.icons` | Optional map of icon name → HTTPS URL to override bundled SVG icons (`back`, `help`, `copy`, `buy`, `sell`, `delivery`, etc.) |
 | `branding.supportEmail` | Help screen email (default `support@justgold.app`) |
 | `branding.supportPhone` | Help screen call button (default `+971 589361909`) |
 | `branding.supportWhatsApp` | Help screen WhatsApp (defaults to `supportPhone`) |
@@ -1321,7 +1348,13 @@ import type {
   SdkSessionConfig,
   SdkOutboundEvent,
   PaymentRequiredPayload,
+  PartnerFeeBreakup,
+  PartnerFeeRequestPayload,
+  QuotePreviewedPayload,
+  TransactionConfirmedPayload,
+  TransactionCompletePayload,
   DeliveryMetalBridgeSummary,
+  DeliveryMetalBridgeEntry,
 } from '@justgold/sdk-bridge';
 ```
 

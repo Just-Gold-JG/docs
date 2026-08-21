@@ -14,12 +14,12 @@ Choose an SDK if you need:
 - native app support for React Native or Flutter
 - a clean handoff between your authenticated user and JustGold flows
 
-## SDK packages (current: 1.1.0)
+## SDK packages (current: 1.1.1)
 
 | Platform | Package | Registry | UI hosting |
 | --- | --- | --- | --- |
-| React Native | `@justgold/rn-sdk` ^1.1.0 | [npm](https://www.npmjs.com/package/@justgold/rn-sdk) | JustGold CDN (signed URL via Partner API) |
-| Flutter | `justgold_sdk` ^1.1.0 | [pub.dev](https://pub.dev/packages/justgold_sdk) | JustGold CDN (signed URL via Partner API) |
+| React Native | `@justgold/rn-sdk` ^1.1.1 | [npm](https://www.npmjs.com/package/@justgold/rn-sdk) | JustGold CDN (signed URL via Partner API) |
+| Flutter | `justgold_sdk` ^1.1.1 | [pub.dev](https://pub.dev/packages/justgold_sdk) | JustGold CDN (signed URL via Partner API) |
 | Backend (all platforms) | `@justgold/partner-sdk` | [npm](https://www.npmjs.com/package/@justgold/partner-sdk) | Server-side HMAC signing only |
 
 Both mobile SDKs embed the same trading UI via **`JustGoldConnect`**. The wrapper fetches a short-lived signed CDN URL from `GET /v1/sdk/ui-url` — you do **not** host or deploy the UI yourself.
@@ -35,7 +35,7 @@ Pass `sandbox: true` for sandbox integration — partners do not configure `apiB
 
 ---
 
-## What's included in the embedded UI (1.1.0)
+## What's included in the embedded UI (1.1.1)
 
 | Feature | Description |
 | --- | --- |
@@ -46,7 +46,7 @@ Pass `sandbox: true` for sandbox integration — partners do not configure `apiB
 | FAQs | Expandable accordion linked from home |
 | Returns calculator | Future returns estimator |
 | Localization | English and Arabic (`locale: 'en' \| 'ar'`) |
-| White-label branding | Partner name, logo, wallet name, support contacts |
+| White-label branding | Partner name, logo, wallet name, support contacts, optional `fontFamily` (du Co Headline 16 bundled) |
 
 External links (invoice PDF, `mailto:`, `tel:`, WhatsApp) are handled **automatically** by `@justgold/rn-sdk` and `justgold_sdk` — no partner callback required.
 
@@ -202,7 +202,7 @@ See **[Bridge events & payloads](sdk/bridge-events.md)** for every event with JS
 
 1. **Backend session endpoint** — expose an app-facing route that returns `sessionToken` and `refreshToken`. See [Session Token](sdk/session-token.md).
 2. **HMAC credentials** — store `client_id` and `client_secret` on your backend only. Use `@justgold/partner-sdk` for signing.
-3. **Install the client package** — `@justgold/rn-sdk` ^1.1.0 or `justgold_sdk` ^1.1.0.
+3. **Install the client package** — `@justgold/rn-sdk` ^1.1.1 or `justgold_sdk` ^1.1.1.
 4. **Implement callbacks** — at minimum: `onClose`, `onSessionExpired` (or `onAuthRequired`), `onPaymentRequired`. See [Bridge events](sdk/bridge-events.md).
 5. **Payment handoff** — PATCH `/v1/transactions/:id` from your backend after partner-side payment. Charge `grandTotal`.
 6. **Webhooks & reconciliation** — see [Webhooks](../webhooks.md).

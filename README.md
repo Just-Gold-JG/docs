@@ -7,7 +7,7 @@ Build digital gold experiences with JustGold using the integration path that fit
 | Method | Best for | You build | JustGold provides |
 | --- | --- | --- | --- |
 | [API integration](api/overview.md) | Backend-led products, custom checkout, server-side orchestration | Customer mapping, order screens, payment flow, request signing, webhooks | REST APIs for customers, prices, previews, buy, sell, delivery, and transactions |
-| [SDK integration](sdk/overview.md) | Mobile apps (React Native or Flutter) that need a faster embedded integration | App entry points, user session handoff, payment UI, native callbacks | `@justgold/rn-sdk` ^1.1.0 and `justgold_sdk` ^1.1.0 — CDN-hosted trading UI |
+| [SDK integration](sdk/overview.md) | Mobile apps (React Native or Flutter) that need a faster embedded integration | App entry points, user session handoff, payment UI, native callbacks | `@justgold/rn-sdk` ^1.1.1 and `justgold_sdk` ^1.1.1 — CDN-hosted trading UI |
 
 ## Core capabilities
 

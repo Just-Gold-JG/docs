@@ -1,6 +1,6 @@
 # React Native SDK Integration
 
-Embed the JustGold gold & silver trading UI in your React Native app with **`@justgold/rn-sdk`** (^1.1.0).
+Embed the JustGold gold & silver trading UI in your React Native app with **`@justgold/rn-sdk`** (^1.1.1).
 
 The wrapper loads the UI from **JustGold CDN** automatically — no separate UI deploy, no `sdkUrl` in normal integration.
 
@@ -40,9 +40,9 @@ flowchart TD
 ## 1. Install
 
 ```bash
-yarn add @justgold/rn-sdk@^1.1.0 react-native-webview react-native-safe-area-context
+yarn add @justgold/rn-sdk@^1.1.1 react-native-webview react-native-safe-area-context
 # or
-npm install @justgold/rn-sdk@^1.1.0 react-native-webview react-native-safe-area-context
+npm install @justgold/rn-sdk@^1.1.1 react-native-webview react-native-safe-area-context
 ```
 
 ### Peer dependencies
