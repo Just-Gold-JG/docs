@@ -206,6 +206,7 @@ const quantity = new Decimal(response.quantity).toFixed(4); // metal quantity
 | Preview | `POST /v1/buy/preview`, `POST /v1/sell/preview`, `POST /v1/delivery/preview` |
 | Orders | `POST /v1/buy`, `POST /v1/sell`, `POST /v1/delivery` |
 | Transactions | `PATCH /v1/transactions/:transactionId` |
+| Terms & Conditions | `GET /v1/organizations/terms` |
 
 ## Next step
 
