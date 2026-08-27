@@ -17,6 +17,7 @@
   * [Products](api/products)
   * [Delivery](api/delivery)
   * [Transactions](api/transactions)
+  * [Terms & Conditions](api/terms)
 * SDK Integration
   * [Overview](sdk/overview)
   * [Quickstart (React Native & Flutter)](sdk/quickstart)
