@@ -1,6 +1,6 @@
 # React Native SDK Integration
 
-Embed the JustGold gold & silver trading UI in your React Native app with **`@justgold/rn-sdk`** (^1.1.1).
+Embed the JustGold gold & silver trading UI in your React Native app with **`@justgold/rn-sdk`** (^1.1.2).
 
 The wrapper loads the UI from **JustGold CDN** automatically — no separate UI deploy, no `sdkUrl` in normal integration.
 
@@ -40,9 +40,9 @@ flowchart TD
 ## 1. Install
 
 ```bash
-yarn add @justgold/rn-sdk@^1.1.1 react-native-webview react-native-safe-area-context
+yarn add @justgold/rn-sdk@^1.1.2 react-native-webview react-native-safe-area-context
 # or
-npm install @justgold/rn-sdk@^1.1.1 react-native-webview react-native-safe-area-context
+npm install @justgold/rn-sdk@^1.1.2 react-native-webview react-native-safe-area-context
 ```
 
 ### Peer dependencies
@@ -406,7 +406,16 @@ onPartnerFeeRequest={async ({ operation, metal, mintingFee, deliveryFee }) => {
 }}
 ```
 
-If your callback throws or times out (8s), the SDK falls back to the org default fee.
+If your callback throws or times out (**60 seconds**), the SDK falls back to the org default fee.
+
+To **reject** a transaction before preview (e.g. insufficient balance), return a breakup with `error`:
+
+```tsx
+onPartnerFeeRequest={async () => ({
+  platformFee: 0,
+  error: { code: 1001, description: 'Insufficient wallet balance' },
+})}
+```
 
 ---
 

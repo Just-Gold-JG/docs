@@ -1,6 +1,6 @@
 # Flutter SDK Integration
 
-Embed the JustGold gold & silver trading UI in your Flutter app with **`justgold_sdk`** (^1.1.1) on [pub.dev](https://pub.dev/packages/justgold_sdk).
+Embed the JustGold gold & silver trading UI in your Flutter app with **`justgold_sdk`** (^1.1.2) on [pub.dev](https://pub.dev/packages/justgold_sdk).
 
 The wrapper loads the UI from **JustGold CDN** automatically — no separate UI deploy.
 
@@ -50,7 +50,7 @@ sequenceDiagram
 
 ```yaml
 dependencies:
-  justgold_sdk: ^1.1.1
+  justgold_sdk: ^1.1.2
 ```
 
 ```bash
@@ -397,9 +397,13 @@ onPartnerFeeRequest: (payload) async {
   return 5.0;
   // Or full breakup for delivery orders:
   // return PartnerFeeBreakup(platformFee: 5.0, platformFeeTax: 0.25, ...);
+  // Reject before preview (SDK stays silent — show description in native UI):
+  // return PartnerFeeBreakup(error: PartnerFeeError(code: 1001, description: 'Insufficient balance'));
   // Return null for org default from JustGold API
 },
 ```
+
+The SDK waits up to **60 seconds** for your callback. On timeout, throw, or `null`, the org default platform fee is used.
 
 For delivery, the request includes `mintingFee` and `deliveryFee` totals so your backend can compute partner splits.
 
@@ -423,18 +427,18 @@ Custom WebView hosts must handle the event manually — see [Bridge reference](s
 
 ---
 
-## 12. In-SDK features (SDK 1.1.1)
+## 12. In-SDK features (SDK 1.1.2)
 
 Partners do not implement these screens — they are included in the embedded UI:
 
 | Route | Feature |
 | --- | --- |
-| `/` | Home — holdings, buy/sell/delivery shortcuts, FAQ carousel |
+| `/` | Home — live buy/sell bar, digital vault balance, **Invested / Growth / Sell Value** metrics, quick actions, FAQ carousel |
 | `/help` | Support contacts (email, WhatsApp, call) |
 | `/faqs` | Full FAQ list with expandable answers |
 | `/returns-calculator` | Future returns estimator |
 | `/transactions`, `/transactions/:id` | History and detail with invoice download |
-| `/delivery/*` | Product catalog, cart, checkout, tracking |
+| `/delivery/*` | Product catalog, cart, checkout, tracking (only when org delivery is enabled) |
 
 Track navigation via `onSdkEvent` or `onNavigation` for analytics.
 

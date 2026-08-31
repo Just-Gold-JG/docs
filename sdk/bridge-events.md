@@ -2,7 +2,7 @@
 
 All platforms use the same JSON message envelope. Platform wrappers (`justgold_sdk`, `@justgold/rn-sdk`) translate bridge messages into typed callbacks — partners normally implement **callbacks**, not raw `postMessage`.
 
-**Current SDK version:** 1.1.1
+**Current SDK version:** 1.1.2
 
 ```json
 { "type": "EVENT_NAME", "payload": {} }
@@ -358,6 +358,7 @@ The host callback may return:
 - A **number** — shorthand for `{ platformFee: number }` (buy/sell only)
 - A **`PartnerFeeBreakup` object** — platform fee plus optional tax and delivery splits
 - **`null`** — omit override; preview API uses org default from `GET /v1/customers/organizations/me`
+- **`{ error: { code, description? } }`** — partner rejection; SDK **does not** call preview; show `description` in your native UI (SDK stays silent)
 
 All monetary fields are **flat amounts in org currency** (not percentages). Omitted or `null` fields are not sent to the preview API.
 
@@ -377,6 +378,7 @@ All monetary fields are **flat amounts in org currency** (not percentages). Omit
 | `deliveryFeeToJustGoldTax` | — | Optional | Tax on JustGold delivery portion |
 | `deliveryFeeToSp` | — | Optional | Delivery portion to service provider |
 | `deliveryFeeToSpTax` | — | Optional | Tax on SP delivery portion |
+| `error` | Optional | Optional | When set, SDK blocks preview — `{ code: number, description?: string }` |
 
 #### Buy — response (platform fee only)
 
@@ -605,7 +607,7 @@ SDK needs partner fees **before** calling the preview API (`POST /v1/buy/preview
 | User taps preview on sell screen | `sell` |
 | User selects delivery address and previews cart | `delivery` |
 
-Timeout: **8 seconds**. If the host does not respond, throws, or returns `null`, the SDK omits `platformFee` on preview and the API uses the org default.
+Timeout: **60 seconds**. If the host does not respond, throws, or returns `null`, the SDK omits `platformFee` on preview and the API uses the org default.
 
 #### Field reference (request payload)
 
