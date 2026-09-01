@@ -360,6 +360,8 @@ The host callback may return:
 - **`null`** — omit override; preview API uses org default from `GET /v1/customers/organizations/me`
 - **`{ error: { code, description? } }`** — partner rejection; SDK **does not** call preview; show `description` in your native UI (SDK stays silent)
 
+**Partner rejection (balance / limits):** include an `error` object on the response (or on the object returned from `onPartnerFeeRequest`). When `error` is present, the SDK **does not** call the preview API and **does not** create a transaction. The SDK shows **no** error UI — the partner must display `description` (or their own copy) in native UI.
+
 All monetary fields are **flat amounts in org currency** (not percentages). Omitted or `null` fields are not sent to the preview API.
 
 #### Field reference (`PartnerFeeBreakup`)
@@ -378,7 +380,129 @@ All monetary fields are **flat amounts in org currency** (not percentages). Omit
 | `deliveryFeeToJustGoldTax` | — | Optional | Tax on JustGold delivery portion |
 | `deliveryFeeToSp` | — | Optional | Delivery portion to service provider |
 | `deliveryFeeToSpTax` | — | Optional | Tax on SP delivery portion |
-| `error` | Optional | Optional | When set, SDK blocks preview — `{ code: number, description?: string }` |
+| `error` | Optional | Optional | **Block preview** — see [Partner rejection](#partner-rejection-balance--limits) |
+
+#### Partner rejection (balance / limits)
+
+Use when the partner wallet check fails **before** JustGold creates a quote or transaction — e.g. insufficient balance, daily/monthly limits, or other partner business rules.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `error.code` | number | **Partner-defined** application error code (not an HTTP status). Use a stable numeric catalog — see [recommended codes](#recommended-partner-error-codes) below. |
+| `error.description` | string (optional) | Message for the **partner** to show natively. SDK does not display this. May be empty if the partner uses fixed copy per `code`. |
+
+> **Do not use HTTP status codes** (e.g. `402`, `403`, `429`) as `error.code`. Those belong on REST responses. The bridge carries **partner wallet/business codes** only. The JustGold SDK blocks on any valid numeric `error.code` — it does not interpret specific values.
+
+#### Recommended partner error codes
+
+Define a **partner-owned catalog** (document and keep stable). Suggested starting set:
+
+| Code | Meaning | When to use |
+| --- | --- | --- |
+| `1001` | Insufficient wallet balance | Customer cannot cover the order amount in the partner wallet |
+| `1002` | Transaction / account limit exceeded | Daily, monthly, or per-transaction limits blocked the purchase |
+| `1003` | Account restricted (optional) | KYC, fraud hold, or wallet frozen |
+
+Use **one distinct code per reason** so native UI, analytics, and support tooling can branch correctly. Reusing the same code for balance and limits (e.g. HTTP `402` for both) is discouraged.
+
+**Scenario 1 — insufficient wallet balance:**
+
+```json
+{
+  "type": "PARTNER_FEE_RESPONSE",
+  "requestId": "550e8400-e29b-41d4-a716-446655440000",
+  "platformFee": 5.0,
+  "platformFeeTax": 0.25,
+  "mintingFee": null,
+  "deliveryFee": null,
+  "mintingFeeToJustGold": null,
+  "mintingFeeToJustGoldTax": null,
+  "mintingFeeToSp": null,
+  "mintingFeeToSpTax": null,
+  "deliveryFeeToJustGold": null,
+  "deliveryFeeToJustGoldTax": null,
+  "deliveryFeeToSp": null,
+  "deliveryFeeToSpTax": null,
+  "error": {
+    "code": 1001,
+    "description": "Sorry, you do not have the sufficient balance in your wallet. Please top-up your wallet and try again"
+  }
+}
+```
+
+**Scenario 2 — account / transaction limit exceeded:**
+
+```json
+{
+  "type": "PARTNER_FEE_RESPONSE",
+  "requestId": "550e8400-e29b-41d4-a716-446655440001",
+  "platformFee": 5.0,
+  "platformFeeTax": 0.25,
+  "mintingFee": null,
+  "deliveryFee": null,
+  "mintingFeeToJustGold": null,
+  "mintingFeeToJustGoldTax": null,
+  "mintingFeeToSp": null,
+  "mintingFeeToSpTax": null,
+  "deliveryFeeToJustGold": null,
+  "deliveryFeeToJustGoldTax": null,
+  "deliveryFeeToSp": null,
+  "deliveryFeeToSpTax": null,
+  "error": {
+    "code": 1002,
+    "description": "Sorry, you have exceeded the maximum limit of transactions for the month. Please try again at next month to complete your transfer"
+  }
+}
+```
+
+**React Native** — return `error` from `onPartnerFeeRequest` and show the alert in your app:
+
+```tsx
+onPartnerFeeRequest={async payload => {
+  const check = await partnerBackend.checkWallet(payload);
+  if (check.reason === 'insufficient_balance') {
+    Alert.alert('Insufficient balance', check.message);
+    return {
+      platformFee: 5.0,
+      error: { code: 1001, description: check.message },
+    };
+  }
+  if (check.reason === 'limit_exceeded') {
+    Alert.alert('Limit exceeded', check.message);
+    return {
+      platformFee: 5.0,
+      error: { code: 1002, description: check.message },
+    };
+  }
+  return { platformFee: 5.0 };
+}}
+```
+
+**Flutter:**
+
+```dart
+onPartnerFeeRequest: (payload) async {
+  final check = await partnerBackend.checkWallet(payload);
+  if (!check.ok) {
+    if (context.mounted) {
+      await showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Insufficient balance'),
+          content: Text(check.message),
+        ),
+      );
+    }
+    return PartnerFeeBreakup(
+      platformFee: 5.0,
+      error: PartnerFeeError(code: 1001, description: check.message),
+    );
+  }
+  return PartnerFeeBreakup(platformFee: 5.0);
+},
+```
+
+> **Note:** Throwing from `onPartnerFeeRequest` still falls back to org default preview (legacy behaviour). To **block** the flow, return `error` — do not throw.
 
 #### Buy — response (platform fee only)
 
@@ -1351,6 +1475,7 @@ import type {
   SdkOutboundEvent,
   PaymentRequiredPayload,
   PartnerFeeBreakup,
+  PartnerFeeError,
   PartnerFeeRequestPayload,
   QuotePreviewedPayload,
   TransactionConfirmedPayload,
