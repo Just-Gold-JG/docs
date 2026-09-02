@@ -1,6 +1,6 @@
 # React Native SDK Integration
 
-Embed the JustGold gold & silver trading UI in your React Native app with **`@justgold/rn-sdk`** (^1.1.3).
+Embed the JustGold gold & silver trading UI in your React Native app with **`@justgold/rn-sdk`** (^1.1.4).
 
 The wrapper loads the UI from **JustGold CDN** automatically — no separate UI deploy, no `sdkUrl` in normal integration.
 
@@ -40,9 +40,9 @@ flowchart TD
 ## 1. Install
 
 ```bash
-yarn add @justgold/rn-sdk@^1.1.3 react-native-webview react-native-safe-area-context
+yarn add @justgold/rn-sdk@^1.1.4 react-native-webview react-native-safe-area-context
 # or
-npm install @justgold/rn-sdk@^1.1.3 react-native-webview react-native-safe-area-context
+npm install @justgold/rn-sdk@^1.1.4 react-native-webview react-native-safe-area-context
 ```
 
 ### Peer dependencies
@@ -294,7 +294,7 @@ For **delivery** orders with both gold and silver, use `payload.metalSummary.gol
 | `theme` | `SdkTheme` | Mode, colors, `PartnerBranding` |
 | `platformFee` | `number` | Flat fee for quote previews; omit for dynamic/org default |
 | `allowNativeNavigation` | `boolean` | `false` (default) blocks Android back and iOS swipe-back |
-| `logLevel` | `SdkLogLevel` | `debug` \| `info` \| `warn` \| `error` (default `warn`) |
+| `logLevel` | `SdkLogLevel` | `debug` \| `info` \| `warn` \| `error` (default `warn`). Proxied API console logs need `debug` **and** `__DEV__` |
 | `sdkUrl` | `string` | Optional CDN URL override (advanced) |
 | `sdkUiSignedUrl` | `string` | Optional pre-signed CDN URL from your backend |
 | `sessionRenewDelayMs` | `number` | **Testing only** — omit in production |

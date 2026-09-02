@@ -2,7 +2,7 @@
 
 All platforms use the same JSON message envelope. Platform wrappers (`justgold_sdk`, `@justgold/rn-sdk`) translate bridge messages into typed callbacks — partners normally implement **callbacks**, not raw `postMessage`.
 
-**Current SDK version:** 1.1.3
+**Current SDK version:** 1.1.4
 
 ```json
 { "type": "EVENT_NAME", "payload": {} }
@@ -273,7 +273,7 @@ Sent by the platform wrapper when the UI is ready (`WEBVIEW_READY`) and when ses
 | `safeAreaInsets`             | `object`         | No       | `{ top, bottom, left, right }` — native only            |
 | `platformFee`                | `number`         | No       | Flat platform fee for preview APIs                      |
 | `useHostPartnerFee`          | `boolean`        | No       | `true` when `onPartnerFeeRequest` is set                |
-| `logLevel`                   | `string`         | No       | `debug` \| `info` \| `warn` \| `error`                  |
+| `logLevel`                   | `string`         | No       | `debug` \| `info` \| `warn` \| `error` (default `warn`). Native API request/response console prints need `debug` **and** a debug build (`kDebugMode` / `__DEV__`) |
 | `sessionRenewDelayMs`        | `number`         | No       | **Testing only** — fixed renew delay                    |
 | `resumePaymentTransactionId` | `string`         | No       | **Wrapper internal** — after SDK remount during payment |
 

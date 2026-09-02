@@ -1,6 +1,6 @@
 # Flutter SDK Integration
 
-Embed the JustGold gold & silver trading UI in your Flutter app with **`justgold_sdk`** (^1.1.3) on [pub.dev](https://pub.dev/packages/justgold_sdk).
+Embed the JustGold gold & silver trading UI in your Flutter app with **`justgold_sdk`** (^1.1.4) on [pub.dev](https://pub.dev/packages/justgold_sdk).
 
 The wrapper loads the UI from **JustGold CDN** automatically — no separate UI deploy.
 
@@ -50,7 +50,7 @@ sequenceDiagram
 
 ```yaml
 dependencies:
-  justgold_sdk: ^1.1.3
+  justgold_sdk: ^1.1.4
 ```
 
 ```bash
@@ -312,7 +312,7 @@ Charge **`grandTotal`**, not `amount`. The `amount` field is the subtotal exclud
 | `sdkUrl` | Optional UI URL override (advanced) |
 | `locale` | `'en'` or `'ar'` |
 | `theme` | `SdkTheme` — mode, colors, `PartnerBranding` |
-| `logLevel` | `debug` \| `info` \| `warn` \| `error` |
+| `logLevel` | `debug` \| `info` \| `warn` \| `error` (default `warn`). Native API request/response console prints need `debug` **and** a debug build (`kDebugMode`) |
 | `platformFee` | Flat fee for quote previews |
 | `allowNativeNavigation` | `false` (default) blocks system back / swipe-back |
 | `onClose` | User closed the SDK |
@@ -443,7 +443,7 @@ Custom WebView hosts must handle the event manually — see [Bridge reference](s
 
 ---
 
-## 12. In-SDK features (SDK 1.1.3)
+## 12. In-SDK features (SDK 1.1.4)
 
 Partners do not implement these screens — they are included in the embedded UI:
 
