@@ -2,7 +2,7 @@
 
 All platforms use the same JSON message envelope. Platform wrappers (`justgold_sdk`, `@justgold/rn-sdk`) translate bridge messages into typed callbacks — partners normally implement **callbacks**, not raw `postMessage`.
 
-**Current SDK version:** 1.1.2
+**Current SDK version:** 1.1.3
 
 ```json
 { "type": "EVENT_NAME", "payload": {} }
@@ -60,6 +60,7 @@ On buy/sell events, the SDK always sends **both** `amount` and `quantity` (strin
 | `TOKENS_REFRESHED`      | `onTokensRefreshed`                     | `onTokensRefreshed`         | **Recommended** (persist refresh token)   |
 | `LOG`                   | `onLog`                                 | `onLog`                     | Optional                                  |
 | `PARTNER_FEE_REQUEST`   | `onPartnerFeeRequest`                   | `onPartnerFeeRequest`       | If dynamic fee                            |
+| `PARTNER_ACTION`        | `onPartnerAction`                       | `onPartnerAction`           | If fee dialog uses `proceed` actions      |
 | `QUOTE_PREVIEWED`       | `onQuotePreviewed` / `onSdkEvent`       | `onSdkEvent`                | Optional                                  |
 | `TRANSACTION_CONFIRMED` | `onTransactionConfirmed` / `onSdkEvent` | `onSdkEvent`                | Optional                                  |
 | `NAVIGATION`            | `onNavigation` / `onSdkEvent`           | `onSdkEvent`                | Optional analytics                      |
@@ -358,9 +359,8 @@ The host callback may return:
 - A **number** — shorthand for `{ platformFee: number }` (buy/sell only)
 - A **`PartnerFeeBreakup` object** — platform fee plus optional tax and delivery splits
 - **`null`** — omit override; preview API uses org default from `GET /v1/customers/organizations/me`
-- **`{ error: { code, description? } }`** — partner rejection; SDK **does not** call preview; show `description` in your native UI (SDK stays silent)
 
-**Partner rejection (balance / limits):** include an `error` object on the response (or on the object returned from `onPartnerFeeRequest`). When `error` is present, the SDK **does not** call the preview API and **does not** create a transaction. The SDK shows **no** error UI — the partner must display `description` (or their own copy) in native UI.
+**Partner rejection (balance / limits):** include an `error` object on the response (or on the object returned from `onPartnerFeeRequest`). When `error` is present, the SDK **does not** call the preview API and **does not** create a transaction. With valid `error.actions`, the SDK shows a dialog; without `actions`, it blocks **silently**. Partners own localization of `title` / `description` / `action.label` (send Arabic when session `locale` is `ar`).
 
 All monetary fields are **flat amounts in org currency** (not percentages). Omitted or `null` fields are not sent to the preview API.
 
@@ -388,24 +388,37 @@ Use when the partner wallet check fails **before** JustGold creates a quote or t
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `error.code` | number | **Partner-defined** application error code (not an HTTP status). Use a stable numeric catalog — see [recommended codes](#recommended-partner-error-codes) below. |
-| `error.description` | string (optional) | Message for the **partner** to show natively. SDK does not display this. May be empty if the partner uses fixed copy per `code`. |
+| `error.code` | number | **Partner-defined** application error code (not an HTTP status). See [recommended codes](#recommended-partner-error-codes). |
+| `error.title` | string (optional) | Dialog title when `actions` are present. |
+| `error.description` | string (optional) | Dialog body when `actions` are present. |
+| `error.actions` | array (optional) | Partner-driven CTAs. **When present (and valid), the SDK shows a dialog.** When omitted/empty/invalid, the SDK blocks preview **silently** (no modal, no confirmation navigation). |
 
-> **Do not use HTTP status codes** (e.g. `402`, `403`, `429`) as `error.code`. Those belong on REST responses. The bridge carries **partner wallet/business codes** only. The JustGold SDK blocks on any valid numeric `error.code` — it does not interpret specific values.
+Each action:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | string | Stable id (e.g. `add_funds`) — forwarded on `PARTNER_ACTION` when `outcome` is `proceed` |
+| `label` | string | Button label in the SDK dialog |
+| `style` | `primary` \| `secondary` \| `destructive` (optional) | Button styling |
+| `outcome` | `proceed` \| `cancel` \| `close` | See below |
+
+| `outcome` | SDK behaviour |
+| --- | --- |
+| `proceed` | Dismiss dialog; emit **`PARTNER_ACTION`**; stay in SDK |
+| `cancel` | Dismiss dialog only; stay in SDK |
+| `close` | Dismiss dialog; emit **`CLOSE`** (exit SDK) |
+
+> **Do not use HTTP status codes** (e.g. `402`, `403`, `429`) as `error.code`. The bridge carries **partner wallet/business codes** only.
 
 #### Recommended partner error codes
 
-Define a **partner-owned catalog** (document and keep stable). Suggested starting set:
-
-| Code | Meaning | When to use |
+| Code | Meaning | Suggested `actions` |
 | --- | --- | --- |
-| `1001` | Insufficient wallet balance | Customer cannot cover the order amount in the partner wallet |
-| `1002` | Transaction / account limit exceeded | Daily, monthly, or per-transaction limits blocked the purchase |
-| `1003` | Account restricted (optional) | KYC, fraud hold, or wallet frozen |
+| `1001` | Insufficient wallet balance | ADD FUNDS (`proceed`) + Close (`cancel`) |
+| `1002` | Transaction / account limit exceeded | Close (`close`) — exits SDK |
+| `1003` | Account restricted (optional) | Partner-defined |
 
-Use **one distinct code per reason** so native UI, analytics, and support tooling can branch correctly. Reusing the same code for balance and limits (e.g. HTTP `402` for both) is discouraged.
-
-**Scenario 1 — insufficient wallet balance:**
+**Scenario 1 — insufficient wallet balance (SDK dialog):**
 
 ```json
 {
@@ -413,68 +426,89 @@ Use **one distinct code per reason** so native UI, analytics, and support toolin
   "requestId": "550e8400-e29b-41d4-a716-446655440000",
   "platformFee": 5.0,
   "platformFeeTax": 0.25,
-  "mintingFee": null,
-  "deliveryFee": null,
-  "mintingFeeToJustGold": null,
-  "mintingFeeToJustGoldTax": null,
-  "mintingFeeToSp": null,
-  "mintingFeeToSpTax": null,
-  "deliveryFeeToJustGold": null,
-  "deliveryFeeToJustGoldTax": null,
-  "deliveryFeeToSp": null,
-  "deliveryFeeToSpTax": null,
   "error": {
     "code": 1001,
-    "description": "Sorry, you do not have the sufficient balance in your wallet. Please top-up your wallet and try again"
+    "title": "Insufficient balance",
+    "description": "Sorry, you do not have the sufficient balance in your wallet. Please top-up your wallet and try again",
+    "actions": [
+      { "id": "add_funds", "label": "ADD FUNDS", "style": "primary", "outcome": "proceed" },
+      { "id": "close", "label": "Close", "style": "secondary", "outcome": "cancel" }
+    ]
   }
 }
 ```
 
-**Scenario 2 — account / transaction limit exceeded:**
+**Scenario 2 — limit exceeded (Close exits SDK):**
 
 ```json
 {
   "type": "PARTNER_FEE_RESPONSE",
   "requestId": "550e8400-e29b-41d4-a716-446655440001",
   "platformFee": 5.0,
-  "platformFeeTax": 0.25,
-  "mintingFee": null,
-  "deliveryFee": null,
-  "mintingFeeToJustGold": null,
-  "mintingFeeToJustGoldTax": null,
-  "mintingFeeToSp": null,
-  "mintingFeeToSpTax": null,
-  "deliveryFeeToJustGold": null,
-  "deliveryFeeToJustGoldTax": null,
-  "deliveryFeeToSp": null,
-  "deliveryFeeToSpTax": null,
   "error": {
     "code": 1002,
-    "description": "Sorry, you have exceeded the maximum limit of transactions for the month. Please try again at next month to complete your transfer"
+    "title": "Limit exceeded",
+    "description": "Sorry, you have exceeded the maximum limit of transactions for the month. Please try again at next month to complete your transfer",
+    "actions": [
+      { "id": "close", "label": "Close", "style": "primary", "outcome": "close" }
+    ]
   }
 }
 ```
 
-**React Native** — return `error` from `onPartnerFeeRequest` and show the alert in your app:
+**`PARTNER_ACTION` (SDK → host)** — emitted when the user taps a `proceed` action:
+
+```json
+{
+  "type": "PARTNER_ACTION",
+  "payload": {
+    "context": "partner_fee",
+    "actionId": "add_funds",
+    "code": 1001,
+    "metadata": {
+      "requestId": "550e8400-e29b-41d4-a716-446655440000",
+      "operation": "buy",
+      "metal": "Gold",
+      "amount": "500"
+    }
+  }
+}
+```
+
+**React Native:**
 
 ```tsx
 onPartnerFeeRequest={async payload => {
   const check = await partnerBackend.checkWallet(payload);
   if (check.reason === 'insufficient_balance') {
-    Alert.alert('Insufficient balance', check.message);
     return {
       platformFee: 5.0,
-      error: { code: 1001, description: check.message },
+      error: {
+        code: 1001,
+        title: 'Insufficient balance',
+        description: check.message,
+        actions: [
+          { id: 'add_funds', label: 'ADD FUNDS', style: 'primary', outcome: 'proceed' },
+          { id: 'close', label: 'Close', style: 'secondary', outcome: 'cancel' },
+        ],
+      },
     };
   }
   if (check.reason === 'limit_exceeded') {
-    Alert.alert('Limit exceeded', check.message);
     return {
       platformFee: 5.0,
-      error: { code: 1002, description: check.message },
+      error: {
+        code: 1002,
+        title: 'Limit exceeded',
+        description: check.message,
+        actions: [{ id: 'close', label: 'Close', style: 'primary', outcome: 'close' }],
+      },
     };
   }
   return { platformFee: 5.0 };
+}}
+onPartnerAction={({ actionId }) => {
+  if (actionId === 'add_funds') openWalletTopUp();
 }}
 ```
 
@@ -483,22 +517,24 @@ onPartnerFeeRequest={async payload => {
 ```dart
 onPartnerFeeRequest: (payload) async {
   final check = await partnerBackend.checkWallet(payload);
-  if (!check.ok) {
-    if (context.mounted) {
-      await showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Insufficient balance'),
-          content: Text(check.message),
-        ),
-      );
-    }
+  if (check.reason == 'insufficient_balance') {
     return PartnerFeeBreakup(
       platformFee: 5.0,
-      error: PartnerFeeError(code: 1001, description: check.message),
+      error: PartnerFeeError(
+        code: 1001,
+        title: 'Insufficient balance',
+        description: check.message,
+        actions: const [
+          PartnerFeeAction(id: 'add_funds', label: 'ADD FUNDS', style: 'primary', outcome: PartnerActionOutcome.proceed),
+          PartnerFeeAction(id: 'close', label: 'Close', style: 'secondary', outcome: PartnerActionOutcome.cancel),
+        ],
+      ),
     );
   }
   return PartnerFeeBreakup(platformFee: 5.0);
+},
+onPartnerAction: (payload) {
+  if (payload['actionId'] == 'add_funds') openWalletTopUp();
 },
 ```
 
@@ -1476,6 +1512,8 @@ import type {
   PaymentRequiredPayload,
   PartnerFeeBreakup,
   PartnerFeeError,
+  PartnerFeeAction,
+  PartnerActionPayload,
   PartnerFeeRequestPayload,
   QuotePreviewedPayload,
   TransactionConfirmedPayload,

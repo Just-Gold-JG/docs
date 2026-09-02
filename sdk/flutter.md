@@ -1,6 +1,6 @@
 # Flutter SDK Integration
 
-Embed the JustGold gold & silver trading UI in your Flutter app with **`justgold_sdk`** (^1.1.2) on [pub.dev](https://pub.dev/packages/justgold_sdk).
+Embed the JustGold gold & silver trading UI in your Flutter app with **`justgold_sdk`** (^1.1.3) on [pub.dev](https://pub.dev/packages/justgold_sdk).
 
 The wrapper loads the UI from **JustGold CDN** automatically — no separate UI deploy.
 
@@ -50,7 +50,7 @@ sequenceDiagram
 
 ```yaml
 dependencies:
-  justgold_sdk: ^1.1.2
+  justgold_sdk: ^1.1.3
 ```
 
 ```bash
@@ -321,6 +321,7 @@ Charge **`grandTotal`**, not `amount`. The `amount` field is the subtotal exclud
 | `onTokensRefreshed` | Persist new `refreshToken` |
 | `onPaymentRequired` | `(payload, resume)` — open your payment UI |
 | `onPartnerFeeRequest` | Return `PartnerFeeBreakup` or bare platform fee (`double?`) |
+| `onPartnerAction` | User tapped `proceed` on fee error dialog (e.g. ADD FUNDS) |
 | `onSuccess` | Buy/sell/delivery complete |
 | `onError` | `{ code, message }` |
 | `onLog` | Structured log map |
@@ -397,13 +398,28 @@ onPartnerFeeRequest: (payload) async {
   return 5.0;
   // Or full breakup for delivery orders:
   // return PartnerFeeBreakup(platformFee: 5.0, platformFeeTax: 0.25, ...);
-  // Reject before preview (SDK stays silent — show description in native UI):
-  // return PartnerFeeBreakup(error: PartnerFeeError(code: 1001, description: 'Insufficient balance'));
+  // Reject with SDK dialog (actions required). Without actions, blocks silently:
+  // return PartnerFeeBreakup(
+  //   error: PartnerFeeError(
+  //     code: 1001,
+  //     title: 'Insufficient balance',
+  //     description: '…',
+  //     actions: [
+  //       PartnerFeeAction(id: 'add_funds', label: 'ADD FUNDS', style: 'primary', outcome: PartnerActionOutcome.proceed),
+  //       PartnerFeeAction(id: 'close', label: 'Close', style: 'secondary', outcome: PartnerActionOutcome.cancel),
+  //     ],
+  //   ),
+  // );
   // Return null for org default from JustGold API
+},
+onPartnerAction: (payload) {
+  if (payload['actionId'] == 'add_funds') {
+    // Open partner wallet top-up
+  }
 },
 ```
 
-The SDK waits up to **60 seconds** for your callback. On timeout, throw, or `null`, the org default platform fee is used.
+The SDK waits up to **60 seconds** for your callback. On timeout, throw, or `null`, the org default platform fee is used. Partner localizes `title` / `description` / `label` for `en` / `ar`.
 
 For delivery, the request includes `mintingFee` and `deliveryFee` totals so your backend can compute partner splits.
 
@@ -427,7 +443,7 @@ Custom WebView hosts must handle the event manually — see [Bridge reference](s
 
 ---
 
-## 12. In-SDK features (SDK 1.1.2)
+## 12. In-SDK features (SDK 1.1.3)
 
 Partners do not implement these screens — they are included in the embedded UI:
 
