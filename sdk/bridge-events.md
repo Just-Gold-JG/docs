@@ -2,7 +2,7 @@
 
 All platforms use the same JSON message envelope. Platform wrappers (`justgold_sdk`, `@justgold/rn-sdk`) translate bridge messages into typed callbacks — partners normally implement **callbacks**, not raw `postMessage`.
 
-**Current SDK version:** 1.1.4
+**Current SDK version:** 1.1.6
 
 ```json
 { "type": "EVENT_NAME", "payload": {} }
@@ -695,6 +695,8 @@ Authentication failed — re-issue session from partner backend.
 | `unauthorized`       | API returned 401          |
 
 Also followed by `SESSION_EXPIRED`. Implement `onAuthRequired` and/or `onSessionExpired`.
+
+**Session recovery (SDK 1.1.5+):** When auth fails, the embedded UI runs a multi-phase recovery (retries + foreground auto-retry). Your host must **re-issue a fresh session token pair** in `onAuthRequired` — do not close or unmount the SDK on the first failure. The wrapper retries `INIT_SESSION` after ~600ms so new tokens arrive before re-init. On app resume, call your session refresh again if the SDK is still open. Stale `INIT_SESSION` messages during recovery are ignored by the UI.
 
 ---
 
