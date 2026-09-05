@@ -377,12 +377,19 @@ onPaymentRequired: (payload, _) {
 },
 // 1. Collect payment (your PSP / wallet)
 // 2. PATCH /v1/transactions/:id from your backend (HMAC)
-// 3. Navigator.pop — SDK polls and shows the result
+//    Completed / Failed — then pop; SDK shows the result
+//    Cancelled — user tapped Back; then pop; SDK restores buy/sell with the original amount
 ```
+
+### User dismisses payment (Back)
+
+Intercept the payment page Back (including Android system back) and **PATCH `Cancelled`** before popping. Overlay: SDK stays mounted and restores the amount form. Remount: remount with the same tokens — SDK restores the form, not pending.
+
+If the transaction is still `Pending` after **10 minutes**, JustGold sets `Stale`. The SDK does not keep showing pending payment. Do not PATCH `Stale`.
 
 ### Unmounting during payment
 
-If you must unmount `JustGoldConnect` (e.g. native PSP SDK), remount with the **same** `token` and `refreshToken`. The wrapper restores the payment route via session cache.
+If you must unmount `JustGoldConnect` (e.g. native PSP SDK), remount with the **same** `token` and `refreshToken`. The wrapper restores pending/result, or the buy/sell form when status is `Cancelled` / `Stale`.
 
 ### Optional: `resume(transactionId)`
 
@@ -490,7 +497,7 @@ Track navigation via `onSdkEvent` or `onNavigation` for analytics.
 | --- | --- | --- |
 | Blank WebView | Missing `INTERNET` on Android release | Add permission to main manifest |
 | Session errors | Expired JWT, no refresh token | Pass `refreshToken`; implement `onAuthRequired` |
-| Payment stuck | PATCH not called | Backend must PATCH `Completed` or `Failed` |
+| Payment stuck | PATCH not called | Backend must PATCH `Completed`, `Failed`, or `Cancelled` (Back). Pending older than 10 minutes becomes `Stale`. |
 | Help links fail | Custom WebView | Use `JustGoldConnect` or handle `OPEN_EXTERNAL_URL` |
 | Wrong API environment | Credential mismatch | Match `sandbox` to credential environment |
 
@@ -510,9 +517,9 @@ JustGoldConnect(
 - [ ] Session tokens from your backend only — `client_secret` never in the app
 - [ ] `sandbox: false` for production builds
 - [ ] Android `INTERNET` in main manifest
-- [ ] Payment: `onPaymentRequired` → PATCH transaction → close payment screen
+- [ ] Payment: `onPaymentRequired` → PATCH `Completed` / `Failed` / `Cancelled` (Back) → close payment screen
 - [ ] Charge `grandTotal` in payment UI
-- [ ] Test completed, failed, and cancelled paths in sandbox
+- [ ] Test completed, failed, and payment-Back (`Cancelled` → restore amount) in sandbox
 - [ ] Confirm Android package ID and iOS bundle ID with JustGold onboarding
 - [ ] Webhooks configured — see [Webhooks](../webhooks.md)
 

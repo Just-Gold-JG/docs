@@ -250,9 +250,9 @@ class _TradingScreenState extends State<TradingScreen> {
 
 1. SDK shows internal pending screen and polls `GET /transactions/:id` every 2s
 2. Partner opens payment UI on top
-3. Partner backend `PATCH /v1/transactions/:id` (HMAC) → `Completed` or `Failed`
+3. Partner backend `PATCH /v1/transactions/:id` (HMAC) → `Completed`, `Failed`, or `Cancelled` (user dismissed payment)
 4. Partner closes payment UI (`Navigator.pop`)
-5. SDK detects terminal status automatically — **no new JWT** unless session expired
+5. SDK detects the status automatically — **no new JWT** unless session expired. `Completed` / `Failed` show the result screen. `Cancelled` (and `Stale`, or `Pending` older than 10 minutes) restore buy/sell with the original amount (delivery → cart).
 
 ---
 
@@ -1278,8 +1278,14 @@ X-Signature: <hmac_signature>
 | --- | --- |
 | `Completed` | Payment collected (buy/delivery) or payout sent (sell) |
 | `Failed` | Payment or payout failed |
+| `Cancelled` | User tapped Back / dismissed the payment page without paying |
 
-The SDK polls `GET /transactions/:id` every 2s while your payment screen is open. Close your payment UI after PATCH — the SDK shows success or failure automatically.
+Do **not** PATCH `Stale`. JustGold marks `Pending` transactions **Stale** after 10 minutes. The SDK must not keep showing the pending payment UI for `Cancelled`, `Stale`, or `Pending` older than 10 minutes — it returns to buy (subtotal `amount`) / sell (grams) / delivery cart.
+
+The SDK polls `GET /v1/customers/:id/transactions/:id` every 2s while your payment screen is open. Close your payment UI after PATCH:
+
+- `Completed` / `Failed` — SDK shows success or failure
+- `Cancelled` — SDK restores the trading form with the amount the customer had selected
 
 **React Native:**
 
@@ -1312,7 +1318,7 @@ onPaymentRequired: (payload, resume) {
 
 ### `PAYMENT_PENDING_CLEAR`
 
-SDK detected terminal payment status (`Completed` / `Failed`) while polling. **Wrapper internal** — clears remount recovery state. Partners do not handle this.
+SDK detected a payment outcome while polling (`Completed` / `Failed` / `Cancelled` / `Stale`, or client-side 10-minute pending expiry). **Wrapper internal** — clears remount recovery state. Partners do not handle this.
 
 ```json
 { "type": "PAYMENT_PENDING_CLEAR" }
@@ -1428,10 +1434,10 @@ Custom hosts: listen for `OPEN_EXTERNAL_URL` and delegate to native URL APIs. Do
 
 1. SDK emits `PAYMENT_REQUIRED` and navigates to an internal pending screen (polls every 2s).
 2. Partner opens a **full-screen payment route on top**, keeping `JustGoldConnect` mounted.
-3. Partner backend PATCHes transaction status via HMAC.
-4. Partner closes the payment screen — SDK shows success/failure automatically.
+3. Partner backend PATCHes transaction status via HMAC (`Completed`, `Failed`, or `Cancelled` if the user backs out).
+4. Partner closes the payment screen — SDK shows success/failure, or restores buy/sell with the original amount on cancel.
 
-If the partner **must unmount** the SDK during payment, remount with the **same** `token` and `refreshToken`. The wrapper adds `resumePaymentTransactionId` to the next `INIT_SESSION`.
+If the partner **must unmount** the SDK during payment, remount with the **same** `token` and `refreshToken`. The wrapper adds `resumePaymentTransactionId` to the next `INIT_SESSION`. After a `Cancelled` PATCH the SDK restores the trading form, not the pending screen.
 
 ---
 

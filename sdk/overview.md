@@ -123,8 +123,8 @@ sequenceDiagram
         Note over Host,SDK: SDK polls and shows final state
         Host->>SDK: Close payment UI (SDK stays mounted)
         SDK->>JG: Poll GET /transactions/:id
-        JG-->>SDK: Completed or Failed
-        SDK-->>Customer: Show transaction status
+        JG-->>SDK: Completed, Failed, Cancelled, or Stale
+        SDK-->>Customer: Show result or restore buy/sell amount
     end
 ```
 
@@ -185,7 +185,7 @@ See **[Bridge events & payloads](sdk/bridge-events.md)** for every event with JS
 | User identity | Authenticates customer | Maps user to JustGold customer | Receives launch/session data |
 | Credentials | Never stores secrets | Stores `client_id` and `client_secret` | Uses short-lived session JWT |
 | Experience | Opens SDK and handles callbacks | PATCHes transaction status (HMAC) | Presents JustGold mobile flow |
-| Payment | Collects payment (`grandTotal`) | Confirms via `PATCH /v1/transactions/:id` | Polls status, shows result |
+| Payment | Collects payment (`grandTotal`); PATCH `Cancelled` on Back | Confirms via `PATCH /v1/transactions/:id` | Polls status; result or restore amount |
 | Support links | — | — | Help, FAQs, invoice download (built-in) |
 | Updates | Shows result state | Handles webhooks | Returns completion events |
 

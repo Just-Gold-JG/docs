@@ -33,7 +33,7 @@ See [Authentication](api/authentication.md) and [Request Signing](api/request-si
 | `id` | string | Transaction identifier. |
 | `type` | string | Transaction type. One of `Buy`, `Sell`, or `Delivery`. |
 | `metal` | string | `Gold` or `Silver`, when applicable. |
-| `status` | string | Transaction status. One of `Pending`, `Completed`, `Failed`, or `Cancelled`. |
+| `status` | string | Transaction status. One of `Pending`, `Completed`, `Failed`, `Cancelled`, or `Stale`. |
 | `quantity` | string | Transaction quantity in grams. |
 | `customerId` | string | Customer identifier. |
 | `organizationIds` | array | Organization hierarchy associated with the transaction. |
@@ -186,7 +186,7 @@ See [Authentication](api/authentication.md) and [Request Signing](api/request-si
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `status` | string | Yes | Updated transaction status. Must be one of `Pending`, `Completed`, `Failed`, or `Cancelled`. |
+| `status` | string | Yes | Updated transaction status. Must be one of `Pending`, `Completed`, `Failed`, or `Cancelled`. Do **not** send `Stale` — that status is set by JustGold when a `Pending` transaction is older than 10 minutes. |
 | `notes` | string | No | Optional notes to store with the transaction status update. |
 | `paymentReference` | string | No | Reference identifier for the customer's payment (e.g. payment gateway transaction ID). |
 | `paymentMethod` | string | No | Payment method used by the customer (e.g. `Card`, `BankTransfer`, `Cash`). |
@@ -198,7 +198,8 @@ See [Authentication](api/authentication.md) and [Request Signing](api/request-si
 | `Pending` | Transaction has been created but has not been completed yet. |
 | `Completed` | Transaction completed successfully. |
 | `Failed` | Transaction failed. |
-| `Cancelled` | Transaction was cancelled. |
+| `Cancelled` | Customer left payment without completing (host payment-page Back / dismiss). Hidden from the customer transaction list. |
+| `Stale` | JustGold cron: still `Pending` after **10 minutes**. Not a partner PATCH. Hidden from the customer transaction list. GET by id still returns it. |
 
 #### Sample request
 

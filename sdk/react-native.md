@@ -370,14 +370,26 @@ onPaymentRequired={(payload) => navigation.navigate('PartnerPayment', payload)}
 // PartnerPayment screen:
 // 1. Collect payment (your PSP / wallet)
 // 2. PATCH /v1/transactions/:id from your backend (HMAC)
-// 3. navigation.goBack() — SDK shows success/failure automatically
+//    Completed / Failed — then goBack(); SDK shows the result
+//    Cancelled — user tapped Back; then goBack(); SDK restores buy/sell with the original amount
 ```
 
 The SDK polls transaction status every 2s on its internal pending screen.
 
+### User dismisses payment (Back)
+
+On payment-page Back (or OS back), **PATCH `Cancelled`** then close the payment UI. Do not leave the transaction `Pending`.
+
+- Overlay: `goBack()` uncovers the SDK. Poll sees `Cancelled` and opens buy (subtotal `amount`) or sell (grams). Delivery returns to cart.
+- Remount: remount with the same tokens. The wrapper still sends `resumePaymentTransactionId`; the SDK restores the form, not pending.
+
+If payment stays `Pending` for **10 minutes**, JustGold marks it `Stale`. The SDK must not keep the pending payment UI — it treats `Stale` (and client-side pending older than 10 minutes) the same as cancel. Hosts must **not** PATCH `Stale`.
+
+`Failed` still shows the payment-failed result (not the amount form).
+
 ### Unmounting during payment
 
-If you **must unmount** `JustGoldConnect` (e.g. native PSP SDK), remount with the **same** `token` and `refreshToken` after PATCH. The wrapper caches the session and restores the payment route. Do **not** re-fetch tokens unless expired.
+If you **must unmount** `JustGoldConnect` (e.g. native PSP SDK), remount with the **same** `token` and `refreshToken` after PATCH. The wrapper caches the session and restores pending/result **or** the buy/sell form when the transaction is `Cancelled` / `Stale`. Do **not** re-fetch tokens unless expired.
 
 ### Optional: `resume(transactionId)`
 
@@ -485,7 +497,7 @@ Standard HTTPS (App Transport Security). No ATS exceptions required.
 | --- | --- | --- |
 | Blank WebView | Missing `INTERNET` on Android release | Add permission to main manifest |
 | `401` / session errors | Expired JWT, no refresh token | Pass `refreshToken`; implement `onAuthRequired` |
-| Payment stuck on pending | PATCH not called or wrong status | Backend must PATCH `Completed` or `Failed` |
+| Payment stuck on pending | PATCH not called or wrong status | Backend must PATCH `Completed`, `Failed`, or `Cancelled` (Back). Pending older than 10 minutes becomes `Stale` and the SDK leaves pending. |
 | Help links don't work | Custom WebView without bridge handler | Use `JustGoldConnect` or handle `OPEN_EXTERNAL_URL` |
 | Wrong environment | Sandbox credentials with `sandbox={false}` | Match SDK flag to credential environment |
 
@@ -503,9 +515,9 @@ Enable debug logs during integration:
 - [ ] `sandbox={false}` (or omit) for production builds
 - [ ] `SafeAreaProvider` wraps `JustGoldConnect`
 - [ ] Android `INTERNET` in main manifest
-- [ ] Payment: `onPaymentRequired` → PATCH transaction → close payment UI
+- [ ] Payment: `onPaymentRequired` → PATCH `Completed` / `Failed` / `Cancelled` (Back) → close payment UI
 - [ ] Charge `grandTotal` in payment UI
-- [ ] Test completed, failed, and cancelled paths in sandbox
+- [ ] Test completed, failed, and payment-Back (`Cancelled` → restore amount) in sandbox
 - [ ] Confirm bundle ID / package name with JustGold onboarding
 - [ ] Webhooks configured — see [Webhooks](../webhooks.md)
 

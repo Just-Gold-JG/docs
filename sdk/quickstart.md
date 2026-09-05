@@ -237,8 +237,12 @@ When the user confirms a quote, the SDK creates a **Pending** transaction and ca
 **Recommended:** keep `JustGoldConnect` mounted. Push your payment screen on top:
 
 1. Collect payment with your PSP / wallet UI
-2. Your backend `PATCH /v1/transactions/:id` with HMAC → `Completed` or `Failed`
-3. Close your payment screen — the SDK polls every 2s and shows success/failure automatically
+2. Your backend `PATCH /v1/transactions/:id` with HMAC → `Completed`, `Failed`, or `Cancelled` (user tapped Back)
+3. Close your payment screen — the SDK polls every 2s: success/failure for complete/fail, or buy/sell with the original amount for cancel
+
+If payment stays `Pending` for 10 minutes, JustGold marks it `Stale`. The SDK leaves the pending screen and does not show a stale payment.
+
+On payment-page Back, PATCH `Cancelled` then pop — do not leave the transaction pending.
 
 ```dart
 // Flutter payment screen skeleton
@@ -257,7 +261,13 @@ class PartnerPaymentPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Complete payment')),
+      appBar: AppBar(
+        title: const Text('Complete payment'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => _complete(context, 'Cancelled'),
+        ),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
