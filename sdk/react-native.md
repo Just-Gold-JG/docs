@@ -1,6 +1,6 @@
 # React Native SDK Integration
 
-Embed the JustGold gold & silver trading UI in your React Native app with **`@justgold/rn-sdk`** (^1.1.6).
+Embed the JustGold gold & silver trading UI in your React Native app with **`@justgold/rn-sdk`** (^1.1.8).
 
 The wrapper loads the UI from **JustGold CDN** automatically — no separate UI deploy, no `sdkUrl` in normal integration.
 
@@ -40,9 +40,9 @@ flowchart TD
 ## 1. Install
 
 ```bash
-yarn add @justgold/rn-sdk@^1.1.6 react-native-webview react-native-safe-area-context
+yarn add @justgold/rn-sdk@^1.1.8 react-native-webview react-native-safe-area-context
 # or
-npm install @justgold/rn-sdk@^1.1.6 react-native-webview react-native-safe-area-context
+npm install @justgold/rn-sdk@^1.1.8 react-native-webview react-native-safe-area-context
 ```
 
 ### Peer dependencies
@@ -103,7 +103,10 @@ export function TradingScreen({ jwt, refreshToken, onDone }: Props) {
         onAuthRequired={() => refreshSessionFromBackend()}
         onTokensRefreshed={({ sessionToken, refreshToken: rt }) => persistTokens(sessionToken, rt)}
         onPaymentRequired={(payload) => navigation.navigate('PartnerPayment', payload)}
-        onError={(err) => console.warn(err.message)}
+        onError={(err) => {
+          if (err.fatal) onDone();
+          else console.warn(err.message);
+        }}
       />
     </SafeAreaProvider>
   );
@@ -216,7 +219,10 @@ export function TradingScreen({ sandbox = false, onDone }: Props) {
         }}
         onSuccess={txn => analytics.track('justgold_complete', txn)}
         onNavigation={({ route }) => analytics.track('justgold_route', { route })}
-        onError={err => console.warn(`SDK [${err.code}]:`, err.message)}
+        onError={err => {
+          if (err.fatal) onDone();
+          else console.warn(`SDK [${err.code}]:`, err.message);
+        }}
         onLog={({ level, message }) => console.log(`[JustGold ${level}]`, message)}
       />
     </SafeAreaProvider>
@@ -310,7 +316,7 @@ For **delivery** orders with both gold and silver, use `payload.metalSummary.gol
 | `onQuotePreviewed` | `(payload) => void` | Preview API succeeded |
 | `onTransactionConfirmed` | `(payload) => void` | Transaction created (usually `Pending`) |
 | `onDeliveryComplete` | `(payload) => void` | Delivery order placed |
-| `onError` | `(payload) => void` | `{ code, message }` |
+| `onError` | `(payload) => void` | `{ code, message, fatal? }` — if `fatal`, show your UI or close; otherwise log |
 | `onLog` | `(payload) => void` | Structured SDK logs |
 | `onSdkEvent` | `(event) => void` | Catch-all for every outbound event |
 

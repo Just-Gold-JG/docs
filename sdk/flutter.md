@@ -1,6 +1,6 @@
 # Flutter SDK Integration
 
-Embed the JustGold gold & silver trading UI in your Flutter app with **`justgold_sdk`** (^1.1.6) on [pub.dev](https://pub.dev/packages/justgold_sdk).
+Embed the JustGold gold & silver trading UI in your Flutter app with **`justgold_sdk`** (^1.1.8) on [pub.dev](https://pub.dev/packages/justgold_sdk).
 
 The wrapper loads the UI from **JustGold CDN** automatically — no separate UI deploy.
 
@@ -50,7 +50,7 @@ sequenceDiagram
 
 ```yaml
 dependencies:
-  justgold_sdk: ^1.1.6
+  justgold_sdk: ^1.1.8
 ```
 
 ```bash
@@ -118,7 +118,13 @@ class TradingPage extends StatelessWidget {
           ),
         );
       },
-      onError: (err) => debugPrint('SDK error: ${err['message']}'),
+      onError: (err) {
+        if (err['fatal'] == true) {
+          Navigator.of(context).pop();
+        } else {
+          debugPrint('SDK error: ${err['message']}');
+        }
+      },
     );
   }
 }
@@ -215,7 +221,13 @@ class _TradingScreenState extends State<TradingScreen> {
       },
       onSuccess: (payload) => debugPrint('Transaction: $payload'),
       onNavigation: (payload) => debugPrint('Route: ${payload['route']}'),
-      onError: (err) => debugPrint('SDK error [${err['code']}]: ${err['message']}'),
+      onError: (err) {
+        if (err['fatal'] == true) {
+          Navigator.of(context).pop();
+        } else {
+          debugPrint('SDK error [${err['code']}]: ${err['message']}');
+        }
+      },
       onLog: (log) => debugPrint('[JustGold ${log['level']}] ${log['message']}'),
     );
   }
@@ -323,7 +335,7 @@ Charge **`grandTotal`**, not `amount`. The `amount` field is the subtotal exclud
 | `onPartnerFeeRequest` | Return `PartnerFeeBreakup` or bare platform fee (`double?`) |
 | `onPartnerAction` | User tapped `proceed` on fee error dialog (e.g. ADD FUNDS) |
 | `onSuccess` | Buy/sell/delivery complete |
-| `onError` | `{ code, message }` |
+| `onError` | `{ code, message, fatal? }` — if `fatal`, show your UI or close; otherwise log |
 | `onLog` | Structured log map |
 | `onSdkEvent` | Catch-all outbound event as `Map` |
 
@@ -450,7 +462,7 @@ Custom WebView hosts must handle the event manually — see [Bridge reference](s
 
 ---
 
-## 12. In-SDK features (SDK 1.1.6)
+## 12. In-SDK features (SDK 1.1.8)
 
 Partners do not implement these screens — they are included in the embedded UI:
 

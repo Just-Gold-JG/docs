@@ -4,8 +4,8 @@ Integrate JustGold gold & silver trading into your **React Native** or **Flutter
 
 | Platform | Package | Version | Registry |
 | --- | --- | --- | --- |
-| React Native | `@justgold/rn-sdk` | ^1.1.6 | [npm](https://www.npmjs.com/package/@justgold/rn-sdk) |
-| Flutter | `justgold_sdk` | ^1.1.6 | [pub.dev](https://pub.dev/packages/justgold_sdk) |
+| React Native | `@justgold/rn-sdk` | ^1.1.8 | [npm](https://www.npmjs.com/package/@justgold/rn-sdk) |
+| Flutter | `justgold_sdk` | ^1.1.8 | [pub.dev](https://pub.dev/packages/justgold_sdk) |
 | Backend (all platforms) | `@justgold/partner-sdk` | ^1.0.0 | [npm](https://www.npmjs.com/package/@justgold/partner-sdk) |
 
 > **You do not host the trading UI.** Mobile wrappers load it from JustGold CDN via a short-lived signed URL (`GET /v1/sdk/ui-url`). Your app only needs session tokens from your backend.
@@ -80,7 +80,7 @@ Full reference: [Session Token](sdk/session-token.md) · [Request Signing](../ap
 ### React Native
 
 ```bash
-yarn add @justgold/rn-sdk@^1.1.6 react-native-webview react-native-safe-area-context
+yarn add @justgold/rn-sdk@^1.1.8 react-native-webview react-native-safe-area-context
 cd ios && pod install
 ```
 
@@ -90,7 +90,7 @@ Wrap your app (or SDK screen) in `SafeAreaProvider`.
 
 ```yaml
 dependencies:
-  justgold_sdk: ^1.1.6
+  justgold_sdk: ^1.1.8
 ```
 
 ```bash
@@ -153,7 +153,10 @@ export function TradingScreen({ onDone }: { onDone: () => void }) {
         onPaymentRequired={(payload: PaymentRequiredPayload) => {
           navigation.navigate('PartnerPayment', payload);
         }}
-        onError={err => console.warn(err.message)}
+        onError={err => {
+          if (err.fatal) onDone();
+          else console.warn(err.message);
+        }}
       />
     </SafeAreaProvider>
   );
@@ -222,7 +225,13 @@ class _TradingScreenState extends State<TradingScreen> {
           MaterialPageRoute(builder: (_) => PartnerPaymentPage(payload: payload)),
         );
       },
-      onError: (err) => debugPrint('SDK error: ${err['message']}'),
+      onError: (err) {
+        if (err['fatal'] == true) {
+          Navigator.of(context).pop();
+        } else {
+          debugPrint('SDK error: ${err['message']}');
+        }
+      },
     );
   }
 }
@@ -316,19 +325,21 @@ Partners do **not** pass `apiBaseUrl` — the wrapper resolves URLs from `sandbo
 | `onSessionExpired` / `onAuthRequired` | **Yes** | Re-fetch tokens from your backend |
 | `onPaymentRequired` | **Yes** | Open partner payment UI |
 | `onTokensRefreshed` | Recommended | Persist rotated refresh token |
-| `onError` | Recommended | Log unrecoverable errors |
+| `onError` | Recommended | If `fatal`, show your UI or close; otherwise log |
 | `onPartnerFeeRequest` | If dynamic fees | Return platform fee before quote preview |
 
 Invoice PDFs, Help screen links (`mailto:`, `tel:`, WhatsApp), and external URLs are handled **automatically** by the wrappers — no partner callback needed.
 
 ---
 
-## What's included in SDK 1.1.6
+## What's included in SDK 1.1.8
 
 The embedded UI includes:
 
 - **Investment home** — live prices, vault balance, invested/growth/sell value metrics
-- Buy, sell, and physical delivery flows (delivery hidden when org `deliveryTransactions` is off)
+- Buy, sell, and physical delivery flows (delivery hidden when org `deliveryTransactions` is off). Confirmation **Back** restores the amount the user entered
+- **Silent session renew** — pass `refreshToken`; implement `onAuthRequired` / `onSessionExpired` only if renew fails
+- **Fatal `onError`** — if `fatal` is true, show your UI or close; otherwise log only
 - Transaction history with **invoice download** (opens PDF in device browser)
 - **Help** screen with email, phone, and WhatsApp support contacts
 - **FAQ** accordion and returns calculator with price trend chart

@@ -2,7 +2,7 @@
 
 All platforms use the same JSON message envelope. Platform wrappers (`justgold_sdk`, `@justgold/rn-sdk`) translate bridge messages into typed callbacks — partners normally implement **callbacks**, not raw `postMessage`.
 
-**Current SDK version:** 1.1.6
+**Current SDK version:** 1.1.8
 
 ```json
 { "type": "EVENT_NAME", "payload": {} }
@@ -48,6 +48,7 @@ On buy/sell events, the SDK always sends **both** `amount` and `quantity` (strin
 | `PARTNER_FEE_RESPONSE`  | Only if custom host (not using wrapper callback) | Wrapper handles via `onPartnerFeeRequest`      |
 | `SET_LOG_LEVEL`         | Optional                                         | Pass `logLevel` prop or runtime message        |
 | `GO_TO_ROUTE`           | Optional deep link into an SDK screen            | `goToRoute(route)` (RN ref / Flutter state)    |
+| `ENSURE_SESSION`        | — (wrapper heartbeat)                            | Automatic on resume + every 30s while active   |
 
 ### SDK → Host (you receive — implement callbacks)
 
@@ -70,7 +71,7 @@ On buy/sell events, the SDK always sends **both** `amount` and `quantity` (strin
 | `TRANSACTION_COMPLETE`  | `onSuccess`                             | `onSuccess`                 | Optional                                  |
 | `DELIVERY_COMPLETE`     | `onDeliveryComplete` / `onSdkEvent`     | `onSdkEvent`                | Optional                                  |
 | `CLOSE`                 | `onClose`                               | `onClose`                   | **Yes**                                   |
-| `ERROR`                 | `onError`                               | `onError`                   | Recommended                               |
+| `ERROR`                 | `onError`                               | `onError`                   | Recommended — if `fatal`, close / show your UI |
 | `OPEN_EXTERNAL_URL`     | — (wrapper: `Linking.openURL`)          | — (wrapper: `url_launcher`) | **Automatic** — custom WebView hosts only |
 
 > **Catch-all:** `onSdkEvent` receives **every** outbound event if you prefer one handler (typed on React Native, `Map` on Flutter).
@@ -120,7 +121,10 @@ export function TradingScreen({ initialToken, initialRefreshToken, onDone }: Pro
         }}
         onPartnerFeeRequest={async payload => partnerBackend.fetchPlatformFee(payload.operation, payload.metal)}
         onSuccess={payload => console.log('Transaction complete', payload)}
-        onError={err => console.warn(`SDK [${err.code}]:`, err.message)}
+        onError={err => {
+          if (err.fatal) onDone();
+          else console.warn(`SDK [${err.code}]:`, err.message);
+        }}
         onSdkEvent={event => console.log('SDK event', event.type, event.payload)}
       />
     </SafeAreaProvider>
@@ -215,7 +219,11 @@ class _TradingScreenState extends State<TradingScreen> {
       },
 
       onError: (err) {
-        debugPrint('SDK error [${err['code']}]: ${err['message']}');
+        if (err['fatal'] == true) {
+          Navigator.of(context).pop();
+        } else {
+          debugPrint('SDK error [${err['code']}]: ${err['message']}');
+        }
       },
 
       onLog: (log) {
@@ -645,6 +653,14 @@ Open an allowlisted in-SDK hash route. Unknown paths are ignored.
 
 React Native: `connectRef.current?.goToRoute('/delivery')`. Flutter: `connectKey.currentState?.goToRoute('/delivery')`.
 
+### `ENSURE_SESSION`
+
+Wrapper → WebView: silently renew if the JWT is expired or near expiry. No partner action.
+
+```json
+{ "type": "ENSURE_SESSION" }
+```
+
 ---
 
 ## SDK → Host events
@@ -696,7 +712,9 @@ Authentication failed — re-issue session from partner backend.
 
 Also followed by `SESSION_EXPIRED`. Implement `onAuthRequired` and/or `onSessionExpired`.
 
-**Session recovery (SDK 1.1.5+):** When auth fails, the embedded UI runs a multi-phase recovery (retries + foreground auto-retry). Your host must **re-issue a fresh session token pair** in `onAuthRequired` — do not close or unmount the SDK on the first failure. The wrapper retries `INIT_SESSION` after ~600ms so new tokens arrive before re-init. On app resume, call your session refresh again if the SDK is still open. Stale `INIT_SESSION` messages during recovery are ignored by the UI.
+**Silent renew:** The SDK refreshes the JWT with the refresh token (~60s before expiry, on resume, and every 30s while active). Idle and background → foreground should not show overlays when the refresh token is still valid. Persist `TOKENS_REFRESHED`.
+
+**`onAuthRequired` fallback:** Fired only after silent renew fails. Mint a **new** session — the same JWT is ignored. Do not unmount the SDK on the first failure. Wrappers retry `INIT_SESSION` after ~600ms. Optional: also mint on app resume (sample apps do this). Try again keeps ignoring unchanged tokens.
 
 ---
 
@@ -1389,19 +1407,78 @@ User tapped close in the SDK UI.
 
 ### `ERROR`
 
-Unrecoverable or reported SDK/API error (non-auth).
+Reported SDK or API error (non-auth). Hosts receive this as `onError`.
 
 ```json
 {
   "type": "ERROR",
   "payload": {
     "code": "NETWORK",
-    "message": "Unable to reach API"
+    "message": "Unable to reach API",
+    "fatal": false
   }
 }
 ```
 
-Common `code` values: API error codes from the Partner API, `NETWORK`, validation errors. Auth failures use `AUTH_REQUIRED` instead.
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `code` | string | Catalogue code or coarse API class (`NETWORK`, `API`, `SERVER`) |
+| `message` | string | Human-readable text |
+| `fatal` | boolean (optional) | `true` — SDK is unusable; show your UI or close. Omit/`false` — recoverable; log only |
+| `category` | `'load' \| 'session' \| 'webview' \| 'unknown'` | Present on fatal load/crash events |
+| `retryable` | boolean (optional) | Hint for host retry (fatal load errors only) |
+| `httpStatus` | number (optional) | Logging only |
+
+Existing hosts that ignore new fields keep working. Trading API error sheets stay `fatal: false`. Auth failures use `AUTH_REQUIRED`, not `ERROR`. Session-expired overlay **Close** is `onClose` only — not a fatal `ERROR`.
+
+The wrapper still shows a short **Failed to load JustGold Connect** fallback. Partners should replace or dismiss it when `fatal` is true.
+
+#### Host action
+
+- **`fatal: true`** — close or hide the SDK and show your own error screen. Retry only when `retryable` is true (fresh session / remount).
+- **`fatal` omitted or `false`** — log / analytics only. The SDK keeps handling the error.
+
+```tsx
+onError={err => {
+  if (!err.fatal) {
+    console.warn(err.code, err.message);
+    return;
+  }
+  // SDK cannot load — partner UI or close
+  navigation.goBack();
+}}
+```
+
+```dart
+onError: (err) {
+  if (err['fatal'] != true) {
+    debugPrint('SDK error: $err');
+    return;
+  }
+  Navigator.of(context).pop();
+},
+```
+
+#### Fatal codes (SDK cannot load)
+
+| `code` | Cause | Fatal | Host action |
+| --- | --- | --- | --- |
+| `SDK_UI_URL_FAILED` | Token / network / `GET /v1/sdk/ui-url` failed | yes | Show partner error UI or close; retry session |
+| `SDK_UI_LOAD_FAILED` | WebView / iframe failed to load CDN HTML | yes | Show partner error UI or close |
+| `SDK_SSL_PINNING_FAILED` | Certificate pin mismatch | yes | Close; do not retry on the same compromised path |
+| `SDK_SESSION_INIT_TIMEOUT` | HTML loaded, no `SESSION_STARTED` after init retries (~6s) | yes | Show partner error UI or close; retry |
+| `SDK_WEBVIEW_PROCESS_GONE` | WebView process died and reload still failed | yes | Show partner error UI or remount SDK |
+| `SDK_RENDER_CRASH` | Uncaught UI render error | yes | Show partner error UI or close |
+| `SDK_UNKNOWN` | Unusable but unclassified | yes | Show partner error UI or close |
+
+#### Not fatal
+
+| `code` / situation | Host action |
+| --- | --- |
+| `NETWORK` / `API` / `SERVER` | Log / analytics; SDK shows its own sheet |
+| Partner fee 1001 / 1002 | In-SDK dialog; `onPartnerAction` for ADD FUNDS |
+| Lock-in / cooldown | In-SDK UX |
+| `AUTH_REQUIRED` | Re-issue tokens — not an `ERROR` event |
 
 ---
 
