@@ -2,7 +2,7 @@
 
 All platforms use the same JSON message envelope. Platform wrappers (`justgold_sdk`, `@justgold/rn-sdk`) translate bridge messages into typed callbacks — partners normally implement **callbacks**, not raw `postMessage`.
 
-**Current SDK version:** 1.1.8
+**Current SDK version:** React Native / web **1.1.11**, Flutter **1.1.12**. Tap analytics: [Analytics (`Invest_*`)](sdk/analytics.md).
 
 ```json
 { "type": "EVENT_NAME", "payload": {} }
@@ -64,7 +64,8 @@ On buy/sell events, the SDK always sends **both** `amount` and `quantity` (strin
 | `PARTNER_ACTION`        | `onPartnerAction`                       | `onPartnerAction`           | If fee dialog uses `proceed` actions      |
 | `QUOTE_PREVIEWED`       | `onQuotePreviewed` / `onSdkEvent`       | `onSdkEvent`                | Optional                                  |
 | `TRANSACTION_CONFIRMED` | `onTransactionConfirmed` / `onSdkEvent` | `onSdkEvent`                | Optional                                  |
-| `NAVIGATION`            | `onNavigation` / `onSdkEvent`           | `onSdkEvent`                | Optional analytics                      |
+| `NAVIGATION`            | `onNavigation` / `onSdkEvent`           | `onSdkEvent`                | Optional screen analytics               |
+| `ANALYTICS`             | `onAnalytics` / `onSdkEvent`            | `onAnalytics` / `onSdkEvent` | Optional UI taps (`Invest_*`)          |
 | `PAYMENT_REQUIRED`      | `onPaymentRequired`                     | `onPaymentRequired`         | **Yes** (payment flow)                  |
 | `PAYMENT_PENDING_CLEAR` | — (wrapper internal)                    | — (wrapper internal)        | —                                         |
 | `PAYMENT_DISMISSED`     | — (wrapper internal)                    | — (wrapper internal)        | —                                         |
@@ -120,6 +121,7 @@ export function TradingScreen({ initialToken, initialRefreshToken, onDone }: Pro
           });
         }}
         onPartnerFeeRequest={async payload => partnerBackend.fetchPlatformFee(payload.operation, payload.metal)}
+        onAnalytics={({ name, params }) => mixpanel.track(name, params)}
         onSuccess={payload => console.log('Transaction complete', payload)}
         onError={err => {
           if (err.fatal) onDone();
@@ -237,12 +239,18 @@ class _TradingScreenState extends State<TradingScreen> {
         );
       },
 
-      // --- Optional: raw event stream for analytics ---
+      onAnalytics: (event) {
+        Mixpanel.track(
+          event['name'] as String,
+          event['params'] as Map<String, dynamic>?,
+        );
+      },
 
       onSdkEvent: (event) {
         switch (event['type']) {
           case 'NAVIGATION':
             debugPrint('SDK route: ${event['payload']}');
+          case 'ANALYTICS':
           case 'QUOTE_PREVIEWED':
           case 'TRANSACTION_CONFIRMED':
           case 'DELIVERY_COMPLETE':
@@ -1099,7 +1107,7 @@ For delivery, prefer `metalSummary` over top-level `metal` / `quantity` when the
 
 ### `NAVIGATION`
 
-In-SDK route changed — useful for analytics.
+In-SDK route changed — useful for screen-level analytics. Prefer **`ANALYTICS`** for tap-level `Invest_*` events — [full catalog](sdk/analytics.md).
 
 ```json
 {
@@ -1110,6 +1118,36 @@ In-SDK route changed — useful for analytics.
   }
 }
 ```
+
+---
+
+### `ANALYTICS`
+
+Optional UI tap events (`Invest_*`). **Not required for trading.** Control events (`CLOSE`, `PAYMENT_REQUIRED`, `TRANSACTION_COMPLETE`) are unchanged.
+
+```ts
+onAnalytics={({ name, params }) => mixpanel.track(name, params)}
+```
+
+```dart
+onAnalytics: (event) {
+  Mixpanel.track(event['name'] as String, event['params'] as Map<String, dynamic>?);
+},
+```
+
+```json
+{
+  "type": "ANALYTICS",
+  "payload": {
+    "name": "Invest_Gold_Performance",
+    "params": { "range": "1W" }
+  }
+}
+```
+
+**Full event list, Mixpanel wiring, and params:** [SDK analytics (`Invest_*`)](sdk/analytics.md).
+
+No PII. Also delivered on `onSdkEvent`.
 
 ---
 

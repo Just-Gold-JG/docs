@@ -1,6 +1,6 @@
 # Flutter SDK Integration
 
-Embed the JustGold gold & silver trading UI in your Flutter app with **`justgold_sdk`** (^1.1.8) on [pub.dev](https://pub.dev/packages/justgold_sdk).
+Embed the JustGold gold & silver trading UI in your Flutter app with **`justgold_sdk`** (^1.1.12) on [pub.dev](https://pub.dev/packages/justgold_sdk).
 
 The wrapper loads the UI from **JustGold CDN** automatically — no separate UI deploy.
 
@@ -50,7 +50,7 @@ sequenceDiagram
 
 ```yaml
 dependencies:
-  justgold_sdk: ^1.1.8
+  justgold_sdk: ^1.1.12
 ```
 
 ```bash
@@ -220,6 +220,9 @@ class _TradingScreenState extends State<TradingScreen> {
         );
       },
       onSuccess: (payload) => debugPrint('Transaction: $payload'),
+      onAnalytics: (event) {
+        debugPrint('ANALYTICS ${event['name']} ${event['params']}');
+      },
       onNavigation: (payload) => debugPrint('Route: ${payload['route']}'),
       onError: (err) {
         if (err['fatal'] == true) {
@@ -337,6 +340,7 @@ Charge **`grandTotal`**, not `amount`. The `amount` field is the subtotal exclud
 | `onSuccess` | Buy/sell/delivery complete |
 | `onError` | `{ code, message, fatal? }` — if `fatal`, show your UI or close; otherwise log |
 | `onLog` | Structured log map |
+| `onAnalytics` | UI taps (`ANALYTICS` / Invest_*). Optional — [catalog](sdk/analytics.md) |
 | `onSdkEvent` | Catch-all outbound event as `Map` |
 
 Payment payload fields: `transactionId`, `type` (`buy` \| `sell` \| `delivery`), `amount` (subtotal), `grandTotal` (charge amount), `currency`, `metal`, `quantity`, plus optional fee breakup fields. **Delivery** also includes `metalSummary` with per-metal `gold` / `silver` entries (`quantity` + `amount`) when the cart mixes metals — see [Bridge events](sdk/bridge-events.md#trading-amounts--metal-breakdown).
@@ -462,7 +466,7 @@ Custom WebView hosts must handle the event manually — see [Bridge reference](s
 
 ---
 
-## 12. In-SDK features (SDK 1.1.8)
+## 12. In-SDK features (SDK 1.1.12)
 
 Partners do not implement these screens — they are included in the embedded UI:
 
@@ -475,7 +479,7 @@ Partners do not implement these screens — they are included in the embedded UI
 | `/transactions`, `/transactions/:id` | History and detail with invoice download |
 | `/delivery/*` | Product catalog, cart, checkout, tracking (only when org delivery is enabled) |
 
-Track navigation via `onSdkEvent` or `onNavigation` for analytics.
+Tap-level `Invest_*` events: [SDK analytics](sdk/analytics.md). Screen changes: `onNavigation` / `NAVIGATION`.
 
 ---
 
@@ -540,6 +544,7 @@ JustGoldConnect(
 ## Related docs
 
 - [Mobile SDK Quickstart](sdk/quickstart.md)
+- [SDK analytics (`Invest_*`)](sdk/analytics.md)
 - [Bridge events & payloads](sdk/bridge-events.md)
 - [Session Token](sdk/session-token.md)
 - [React Native integration](sdk/react-native.md)

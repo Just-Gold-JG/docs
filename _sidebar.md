@@ -22,6 +22,7 @@
   * [Quickstart (React Native & Flutter)](sdk/quickstart)
   * [Session Token](sdk/session-token)
   * [Bridge events & payloads](sdk/bridge-events)
+  * [Analytics (`Invest_*`)](sdk/analytics)
   * [React Native](sdk/react-native)
   * [Flutter](sdk/flutter)
 * [Errors](errors)

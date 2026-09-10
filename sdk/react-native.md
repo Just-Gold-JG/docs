@@ -1,6 +1,6 @@
 # React Native SDK Integration
 
-Embed the JustGold gold & silver trading UI in your React Native app with **`@justgold/rn-sdk`** (^1.1.8).
+Embed the JustGold gold & silver trading UI in your React Native app with **`@justgold/rn-sdk`** (^1.1.11).
 
 The wrapper loads the UI from **JustGold CDN** automatically — no separate UI deploy, no `sdkUrl` in normal integration.
 
@@ -40,9 +40,9 @@ flowchart TD
 ## 1. Install
 
 ```bash
-yarn add @justgold/rn-sdk@^1.1.8 react-native-webview react-native-safe-area-context
+yarn add @justgold/rn-sdk@^1.1.11 react-native-webview react-native-safe-area-context
 # or
-npm install @justgold/rn-sdk@^1.1.8 react-native-webview react-native-safe-area-context
+npm install @justgold/rn-sdk@^1.1.11 react-native-webview react-native-safe-area-context
 ```
 
 ### Peer dependencies
@@ -218,6 +218,7 @@ export function TradingScreen({ sandbox = false, onDone }: Props) {
           return yourBackend.fetchPlatformFee(operation, metal);
         }}
         onSuccess={txn => analytics.track('justgold_complete', txn)}
+        onAnalytics={({ name, params }) => analytics.track(name, params)}
         onNavigation={({ route }) => analytics.track('justgold_route', { route })}
         onError={err => {
           if (err.fatal) onDone();
@@ -312,7 +313,8 @@ For **delivery** orders with both gold and silver, use `payload.metalSummary.gol
 | `onPartnerFeeRequest` | `(payload) => PartnerFeeBreakup \| number \| null \| Promise<…>` | Dynamic platform fee before preview |
 | `onPartnerAction` | `(payload) => void` | User tapped `proceed` on fee error dialog (e.g. ADD FUNDS) |
 | `onSuccess` | `(payload) => void` | `TRANSACTION_COMPLETE` |
-| `onNavigation` | `(payload) => void` | In-SDK route changes (analytics) |
+| `onNavigation` | `(payload) => void` | In-SDK route changes |
+| `onAnalytics` | `(payload) => void` | UI taps (`ANALYTICS` / Invest_*). Optional — [catalog](sdk/analytics.md) |
 | `onQuotePreviewed` | `(payload) => void` | Preview API succeeded |
 | `onTransactionConfirmed` | `(payload) => void` | Transaction created (usually `Pending`) |
 | `onDeliveryComplete` | `(payload) => void` | Delivery order placed |
@@ -532,6 +534,7 @@ Enable debug logs during integration:
 ## Related docs
 
 - [Mobile SDK Quickstart](sdk/quickstart.md)
+- [SDK analytics (`Invest_*`)](sdk/analytics.md)
 - [Bridge events & payloads](sdk/bridge-events.md)
 - [Session Token](sdk/session-token.md)
 - [Flutter integration](sdk/flutter.md)
