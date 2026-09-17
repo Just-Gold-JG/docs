@@ -59,16 +59,6 @@ JustGoldConnect(
 )
 ```
 
-### Web (`@justgold/web-sdk` ^1.1.12)
-
-```tsx
-<JustGoldEmbed
-  sdkUrl="/justgold-sdk/index.html"
-  session={{ token, sandbox: false }}
-  onAnalytics={({ name, params }) => mixpanel.track(name, params)}
-/>
-```
-
 ---
 
 ## Payload

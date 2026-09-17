@@ -2,7 +2,7 @@
 
 All platforms use the same JSON message envelope. Platform wrappers (`justgold_sdk`, `@justgold/rn-sdk`) translate bridge messages into typed callbacks — partners normally implement **callbacks**, not raw `postMessage`.
 
-**Current SDK version:** React Native / web **1.1.12**, Flutter **1.1.16**. Tap analytics: [Analytics (`Invest_*`)](sdk/analytics.md). Invoice host fill: [Invoice share & download](sdk/invoice-handoff.md).
+**Current SDK version:** React Native **1.1.12**, Flutter **1.1.16**. Tap analytics: [Analytics (`Invest_*`)](sdk/analytics.md). Invoice host fill: [Invoice share & download](sdk/invoice-handoff.md).
 
 ```json
 { "type": "EVENT_NAME", "payload": {} }
