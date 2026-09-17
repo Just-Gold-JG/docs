@@ -2,7 +2,7 @@
 
 All platforms use the same JSON message envelope. Platform wrappers (`justgold_sdk`, `@justgold/rn-sdk`) translate bridge messages into typed callbacks — partners normally implement **callbacks**, not raw `postMessage`.
 
-**Current SDK version:** React Native / web **1.1.11**, Flutter **1.1.12**. Tap analytics: [Analytics (`Invest_*`)](sdk/analytics.md).
+**Current SDK version:** React Native / web **1.1.12**, Flutter **1.1.16**. Tap analytics: [Analytics (`Invest_*`)](sdk/analytics.md). Invoice host fill: [Invoice share & download](sdk/invoice-handoff.md).
 
 ```json
 { "type": "EVENT_NAME", "payload": {} }
@@ -66,6 +66,8 @@ On buy/sell events, the SDK always sends **both** `amount` and `quantity` (strin
 | `TRANSACTION_CONFIRMED` | `onTransactionConfirmed` / `onSdkEvent` | `onSdkEvent`                | Optional                                  |
 | `NAVIGATION`            | `onNavigation` / `onSdkEvent`           | `onSdkEvent`                | Optional screen analytics               |
 | `ANALYTICS`             | `onAnalytics` / `onSdkEvent`            | `onAnalytics` / `onSdkEvent` | Optional UI taps (`Invest_*`)          |
+| `INVOICE_SHARE`         | `onInvoiceShare`                        | `onInvoiceShare`             | If host fills invoice name             |
+| `INVOICE_DOWNLOAD`      | `onInvoiceDownload`                     | `onInvoiceDownload`          | If host fills invoice name             |
 | `PAYMENT_REQUIRED`      | `onPaymentRequired`                     | `onPaymentRequired`         | **Yes** (payment flow)                  |
 | `PAYMENT_PENDING_CLEAR` | — (wrapper internal)                    | — (wrapper internal)        | —                                         |
 | `PAYMENT_DISMISSED`     | — (wrapper internal)                    | — (wrapper internal)        | —                                         |
@@ -122,6 +124,8 @@ export function TradingScreen({ initialToken, initialRefreshToken, onDone }: Pro
         }}
         onPartnerFeeRequest={async payload => partnerBackend.fetchPlatformFee(payload.operation, payload.metal)}
         onAnalytics={({ name, params }) => mixpanel.track(name, params)}
+        onInvoiceShare={payload => partnerFillAndShareInvoice(payload)}
+        onInvoiceDownload={payload => partnerFillAndSaveInvoice(payload)}
         onSuccess={payload => console.log('Transaction complete', payload)}
         onError={err => {
           if (err.fatal) onDone();
@@ -246,11 +250,20 @@ class _TradingScreenState extends State<TradingScreen> {
         );
       },
 
+      onInvoiceShare: (payload) {
+        partnerFillAndShareInvoice(payload);
+      },
+      onInvoiceDownload: (payload) {
+        partnerFillAndSaveInvoice(payload);
+      },
+
       onSdkEvent: (event) {
         switch (event['type']) {
           case 'NAVIGATION':
             debugPrint('SDK route: ${event['payload']}');
           case 'ANALYTICS':
+          case 'INVOICE_SHARE':
+          case 'INVOICE_DOWNLOAD':
           case 'QUOTE_PREVIEWED':
           case 'TRANSACTION_CONFIRMED':
           case 'DELIVERY_COMPLETE':
@@ -289,6 +302,7 @@ Sent by the platform wrapper when the UI is ready (`WEBVIEW_READY`) and when ses
 | `safeAreaInsets`             | `object`         | No       | `{ top, bottom, left, right }` — native only            |
 | `platformFee`                | `number`         | No       | Flat platform fee for preview APIs                      |
 | `useHostPartnerFee`          | `boolean`        | No       | `true` when `onPartnerFeeRequest` is set                |
+| `useHostInvoiceActions`      | `boolean`        | No       | `true` when `onInvoiceShare` or `onInvoiceDownload` is set |
 | `logLevel`                   | `string`         | No       | `debug` \| `info` \| `warn` \| `error` (default `warn`). Native API request/response console prints need `debug` **and** a debug build (`kDebugMode` / `__DEV__`) |
 | `sessionRenewDelayMs`        | `number`         | No       | **Testing only** — fixed renew delay                    |
 | `resumePaymentTransactionId` | `string`         | No       | **Wrapper internal** — after SDK remount during payment |
@@ -310,6 +324,7 @@ Sent by the platform wrapper when the UI is ready (`WEBVIEW_READY`) and when ses
   },
   "safeAreaInsets": { "top": 47, "bottom": 34, "left": 0, "right": 0 },
   "platformFee": 5.0,
+  "useHostInvoiceActions": true,
   "logLevel": "warn"
 }
 ```
@@ -1522,10 +1537,9 @@ onError: (err) {
 
 ### `OPEN_EXTERNAL_URL`
 
-The SDK UI needs to open a URL **outside** the WebView:
+The SDK UI needs to open a URL **outside** the WebView — Help screen `mailto:`, `tel:`, `https://wa.me/...`.
 
-- Invoice PDF (presigned HTTPS URL)
-- Help screen: `mailto:`, `tel:`, `https://wa.me/...`
+Invoice share/download for hosts that pass `onInvoiceShare` / `onInvoiceDownload` uses [`INVOICE_SHARE` / `INVOICE_DOWNLOAD`](#invoice_share--invoice_download) instead of this event.
 
 **React Native and Flutter wrappers handle this automatically** — no partner callback unless you use a custom WebView host.
 
@@ -1544,6 +1558,39 @@ The SDK UI needs to open a URL **outside** the WebView:
 | Flutter      | `url_launcher` with `LaunchMode.externalApplication` |
 
 Custom hosts: listen for `OPEN_EXTERNAL_URL` and delegate to native URL APIs. Do **not** load `mailto:` or `tel:` inside the WebView.
+
+---
+
+### `INVOICE_SHARE` / `INVOICE_DOWNLOAD`
+
+Emitted when the host opts in (`onInvoiceShare` / `onInvoiceDownload`). The SDK ensures the invoice exists (`GET`, then `POST` generate on 404), then hands the host a short-lived presigned URL plus AcroForm field names. It does **not** preview the unfilled PDF.
+
+Fill the PDF widget named `form.fields.customerName` (value **`customerName`**) with the customer's full name, then share or save. **Do not** put PDF bytes on the WebView message.
+
+Copy-paste examples: **[Invoice share & download](sdk/invoice-handoff.md)**.
+
+```json
+{
+  "type": "INVOICE_SHARE",
+  "payload": {
+    "action": "share",
+    "transactionId": "674a1b2c3d4e5f6789012345",
+    "fileName": "invoice-#JG1A2B3C4D.pdf",
+    "mimeType": "application/pdf",
+    "url": "https://s3.amazonaws.com/customer-invoices/invoice-….pdf?X-Amz-Expires=…",
+    "form": {
+      "type": "acroform",
+      "fields": {
+        "customerName": "customerName"
+      }
+    }
+  }
+}
+```
+
+`INVOICE_DOWNLOAD` is the same shape with `"action": "download"`.
+
+Wrappers set `useHostInvoiceActions: true` on `INIT_SESSION` when either callback is provided. Other partners keep in-SDK preview and share.
 
 ---
 

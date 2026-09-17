@@ -14,12 +14,12 @@ Choose an SDK if you need:
 - native app support for React Native or Flutter
 - a clean handoff between your authenticated user and JustGold flows
 
-## SDK packages (current: RN 1.1.11 / Flutter 1.1.12)
+## SDK packages (current: RN 1.1.12 / Flutter 1.1.16)
 
 | Platform | Package | Registry | UI hosting |
 | --- | --- | --- | --- |
-| React Native | `@justgold/rn-sdk` ^1.1.11 | [npm](https://www.npmjs.com/package/@justgold/rn-sdk) | JustGold CDN (signed URL via Partner API) |
-| Flutter | `justgold_sdk` ^1.1.12 | [pub.dev](https://pub.dev/packages/justgold_sdk) | JustGold CDN (signed URL via Partner API) |
+| React Native | `@justgold/rn-sdk` ^1.1.12 | [npm](https://www.npmjs.com/package/@justgold/rn-sdk) | JustGold CDN (signed URL via Partner API) |
+| Flutter | `justgold_sdk` ^1.1.16 | [pub.dev](https://pub.dev/packages/justgold_sdk) | JustGold CDN (signed URL via Partner API) |
 | Backend (all platforms) | `@justgold/partner-sdk` | [npm](https://www.npmjs.com/package/@justgold/partner-sdk) | Server-side HMAC signing only |
 
 Both mobile SDKs embed the same trading UI via **`JustGoldConnect`**. The wrapper fetches a short-lived signed CDN URL from `GET /v1/sdk/ui-url` — you do **not** host or deploy the UI yourself.
@@ -35,7 +35,7 @@ Pass `sandbox: true` for sandbox integration — partners do not configure `apiB
 
 ---
 
-## What's included in the embedded UI (1.1.11 / 1.1.12)
+## What's included in the embedded UI (1.1.12 / 1.1.16)
 
 | Feature | Description |
 | --- | --- |
@@ -44,7 +44,7 @@ Pass `sandbox: true` for sandbox integration — partners do not configure `apiB
 | Silent session renew | Pass `refreshToken` — JWT is renewed in the background. Implement `onAuthRequired` only if renew fails |
 | Fatal SDK errors | `onError` with `fatal: true` — show your UI or close; non-fatal errors stay in the SDK |
 | Transaction history | List and detail screens |
-| Invoice download | Opens presigned PDF in device browser (automatic) |
+| Invoice download | In-SDK preview and share. Optional host fill of AcroForm `customerName` — [Invoice share & download](sdk/invoice-handoff.md) |
 | Help screen | Email, phone, WhatsApp support contacts |
 | FAQs | Expandable accordion linked from home |
 | Returns calculator | Future returns estimator with price trend chart |
@@ -52,7 +52,7 @@ Pass `sandbox: true` for sandbox integration — partners do not configure `apiB
 | White-label branding | Partner name, logo, wallet name, support contacts, theme colors, optional `fontFamily` (du Co Headline 16 bundled) |
 | Partner fee dialogs | Optional `error.actions` on fee rejection — SDK BottomSheet; `proceed` → `onPartnerAction` |
 
-External links (invoice PDF, `mailto:`, `tel:`, WhatsApp) are handled **automatically** by `@justgold/rn-sdk` and `justgold_sdk` — no partner callback required.
+External links (`mailto:`, `tel:`, WhatsApp) are handled **automatically** by `@justgold/rn-sdk` and `justgold_sdk`. Invoice share/download stays in-SDK unless you opt in — [Invoice share & download](sdk/invoice-handoff.md).
 
 ---
 
@@ -156,10 +156,12 @@ Host app  ──prop update / reply──▶  Native bridge  ──postMessage�
 | `PARTNER_ACTION` | `onPartnerAction` | If fee dialog uses `proceed` (e.g. ADD FUNDS) |
 | `TRANSACTION_COMPLETE` | `onSuccess` | Optional |
 | `ANALYTICS` | `onAnalytics` | Optional — tap catalog (`Invest_*`) |
+| `INVOICE_SHARE` | `onInvoiceShare` | If you fill customer name on the PDF |
+| `INVOICE_DOWNLOAD` | `onInvoiceDownload` | If you fill customer name on the PDF |
 | `OPEN_EXTERNAL_URL` | — (automatic in RN/Flutter) | Handled by wrapper |
 | `ERROR` | `onError` | Recommended — if `fatal`, show your UI or close; otherwise log |
 
-Use `onAnalytics` for tap-level `Invest_*` events ([catalog](sdk/analytics.md)). Use `onSdkEvent` for optional events such as `QUOTE_PREVIEWED`, `TRANSACTION_CONFIRMED`, `NAVIGATION`, `ANALYTICS`, and `DELIVERY_COMPLETE`.
+Use `onAnalytics` for tap-level `Invest_*` events ([catalog](sdk/analytics.md)). Use `onInvoiceShare` / `onInvoiceDownload` only if you must fill the invoice name ([handoff](sdk/invoice-handoff.md)). Use `onSdkEvent` for optional events such as `QUOTE_PREVIEWED`, `TRANSACTION_CONFIRMED`, `NAVIGATION`, `ANALYTICS`, and `DELIVERY_COMPLETE`.
 
 Trading events include **`amount` and `quantity`** for buy/sell. Delivery adds **`metalSummary`** (`gold` / `silver` each with `quantity` and `amount`) when the cart can mix metals — see [Bridge events](sdk/bridge-events.md#trading-amounts--metal-breakdown).
 
@@ -189,7 +191,8 @@ See **[Bridge events & payloads](sdk/bridge-events.md)** for every event with JS
 | Credentials | Never stores secrets | Stores `client_id` and `client_secret` | Uses short-lived session JWT |
 | Experience | Opens SDK and handles callbacks | PATCHes transaction status (HMAC) | Presents JustGold mobile flow |
 | Payment | Collects payment (`grandTotal`); PATCH `Cancelled` on Back | Confirms via `PATCH /v1/transactions/:id` | Polls status; result or restore amount |
-| Support links | — | — | Help, FAQs, invoice download (built-in) |
+| Support links | — | — | Help, FAQs (built-in) |
+| Invoice PDF | Fill AcroForm `customerName` if opted in | — | In-SDK preview/share unless host callbacks are set |
 | Updates | Shows result state | Handles webhooks | Returns completion events |
 
 ---
@@ -201,6 +204,7 @@ See **[Bridge events & payloads](sdk/bridge-events.md)** for every event with JS
 - [Flutter integration](sdk/flutter.md) — full parameters, payment screen, troubleshooting
 - [Bridge events & payloads](sdk/bridge-events.md) — all events, JSON payloads, fee breakup
 - [SDK analytics (`Invest_*`)](sdk/analytics.md) — tap catalog for Mixpanel / Firebase
+- [Invoice share & download](sdk/invoice-handoff.md) — opt-in host fill of AcroForm `customerName`
 - [Session Token](sdk/session-token.md) — backend token issuance and renewal
 
 ---
@@ -209,7 +213,7 @@ See **[Bridge events & payloads](sdk/bridge-events.md)** for every event with JS
 
 1. **Backend session endpoint** — expose an app-facing route that returns `sessionToken` and `refreshToken`. See [Session Token](sdk/session-token.md).
 2. **HMAC credentials** — store `client_id` and `client_secret` on your backend only. Use `@justgold/partner-sdk` for signing.
-3. **Install the client package** — `@justgold/rn-sdk` ^1.1.11 or `justgold_sdk` ^1.1.12.
+3. **Install the client package** — `@justgold/rn-sdk` ^1.1.12 or `justgold_sdk` ^1.1.16.
 4. **Implement callbacks** — at minimum: `onClose`, `onSessionExpired` (or `onAuthRequired`), `onPaymentRequired`. See [Bridge events](sdk/bridge-events.md).
 5. **Payment handoff** — PATCH `/v1/transactions/:id` from your backend after partner-side payment. Charge `grandTotal`.
 6. **Webhooks & reconciliation** — see [Webhooks](../webhooks.md).

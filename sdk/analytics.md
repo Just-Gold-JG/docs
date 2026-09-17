@@ -8,8 +8,8 @@ Requires:
 
 | Platform | Package | Version |
 | --- | --- | --- |
-| React Native | `@justgold/rn-sdk` | ^1.1.11 |
-| Flutter | `justgold_sdk` | ^1.1.12 |
+| React Native | `@justgold/rn-sdk` | ^1.1.12 |
+| Flutter | `justgold_sdk` | ^1.1.16 |
 | Embedded UI | JustGold CDN | deployed with this release |
 
 ---
@@ -59,7 +59,7 @@ JustGoldConnect(
 )
 ```
 
-### Web (`@justgold/web-sdk` ^1.1.11)
+### Web (`@justgold/web-sdk` ^1.1.12)
 
 ```tsx
 <JustGoldEmbed

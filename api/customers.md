@@ -728,6 +728,8 @@ See [Authentication](api/authentication.md) and [Request Signing](api/request-si
 | --- | --- | --- |
 | `url` | string | Pre-signed URL to download the invoice PDF. Valid for a short period — download promptly after receiving. |
 
+Some partner invoices include an empty fillable AcroForm field named `customerName`. SDK hosts that opt in with `onInvoiceShare` / `onInvoiceDownload` fill that widget — see [Invoice share & download](../sdk/invoice-handoff.md).
+
 #### Sample response
 
 ```json

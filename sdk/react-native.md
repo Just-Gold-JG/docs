@@ -1,6 +1,6 @@
 # React Native SDK Integration
 
-Embed the JustGold gold & silver trading UI in your React Native app with **`@justgold/rn-sdk`** (^1.1.11).
+Embed the JustGold gold & silver trading UI in your React Native app with **`@justgold/rn-sdk`** (^1.1.12).
 
 The wrapper loads the UI from **JustGold CDN** automatically — no separate UI deploy, no `sdkUrl` in normal integration.
 
@@ -15,7 +15,7 @@ The wrapper loads the UI from **JustGold CDN** automatically — no separate UI 
 | Backend session endpoint (HMAC) | Trading UI via CDN |
 | Navigation to/from SDK screen | Buy, sell, delivery flows inside WebView |
 | Payment collection UI | Quote preview, transaction creation |
-| `PATCH /v1/transactions/:id` from backend | Invoice download, Help, FAQs |
+| `PATCH /v1/transactions/:id` from backend | Invoice preview/share, Help, FAQs |
 | Token refresh when SDK asks | Silent JWT renewal (~60s before expiry) |
 
 ---
@@ -40,9 +40,9 @@ flowchart TD
 ## 1. Install
 
 ```bash
-yarn add @justgold/rn-sdk@^1.1.11 react-native-webview react-native-safe-area-context
+yarn add @justgold/rn-sdk@^1.1.12 react-native-webview react-native-safe-area-context
 # or
-npm install @justgold/rn-sdk@^1.1.11 react-native-webview react-native-safe-area-context
+npm install @justgold/rn-sdk@^1.1.12 react-native-webview react-native-safe-area-context
 ```
 
 ### Peer dependencies
@@ -219,6 +219,9 @@ export function TradingScreen({ sandbox = false, onDone }: Props) {
         }}
         onSuccess={txn => analytics.track('justgold_complete', txn)}
         onAnalytics={({ name, params }) => analytics.track(name, params)}
+        {/* Fill PDF widget payload.form.fields.customerName — see Invoice share & download */}
+        onInvoiceShare={payload => fillAndHandoffInvoice(payload, customerFullName)}
+        onInvoiceDownload={payload => fillAndHandoffInvoice(payload, customerFullName)}
         onNavigation={({ route }) => analytics.track('justgold_route', { route })}
         onError={err => {
           if (err.fatal) onDone();
@@ -315,6 +318,8 @@ For **delivery** orders with both gold and silver, use `payload.metalSummary.gol
 | `onSuccess` | `(payload) => void` | `TRANSACTION_COMPLETE` |
 | `onNavigation` | `(payload) => void` | In-SDK route changes |
 | `onAnalytics` | `(payload) => void` | UI taps (`ANALYTICS` / Invest_*). Optional — [catalog](sdk/analytics.md) |
+| `onInvoiceShare` | `(payload) => void` | Fill AcroForm `customerName` and share. Opt-in — [handoff](sdk/invoice-handoff.md) |
+| `onInvoiceDownload` | `(payload) => void` | Fill AcroForm `customerName` and save. Opt-in — [handoff](sdk/invoice-handoff.md) |
 | `onQuotePreviewed` | `(payload) => void` | Preview API succeeded |
 | `onTransactionConfirmed` | `(payload) => void` | Transaction created (usually `Pending`) |
 | `onDeliveryComplete` | `(payload) => void` | Delivery order placed |
@@ -329,6 +334,7 @@ import type {
   PaymentRequiredPayload,
   PartnerFeeRequestPayload,
   TokensRefreshedPayload,
+  InvoiceHostPayload,
 } from '@justgold/rn-sdk';
 ```
 
@@ -463,9 +469,15 @@ In-SDK navigation uses explicit routes (e.g. Home → FAQs → Help) — not bro
 
 ---
 
-## 11. External links (invoice PDF, Help contacts)
+## 11. Invoice share & download (opt-in)
 
-The SDK UI opens invoice PDFs and Help screen links (`mailto:`, `tel:`, WhatsApp) via the **`OPEN_EXTERNAL_URL`** bridge event.
+Partners who must stamp the customer's name on the tax invoice pass `onInvoiceShare` / `onInvoiceDownload`. The SDK then emits `INVOICE_SHARE` / `INVOICE_DOWNLOAD` with a presigned URL and AcroForm field **`customerName`** — it does not preview the unfilled PDF.
+
+Full contract and copy-paste examples: **[Invoice share & download](sdk/invoice-handoff.md)**.
+
+## 12. External links (Help contacts)
+
+The SDK UI opens Help screen links (`mailto:`, `tel:`, WhatsApp) via the **`OPEN_EXTERNAL_URL`** bridge event.
 
 **`JustGoldConnect` handles this automatically** with `Linking.openURL` — no partner callback required.
 
@@ -473,7 +485,7 @@ If you embed a custom WebView instead of `JustGoldConnect`, handle `OPEN_EXTERNA
 
 ---
 
-## 12. Environments
+## 13. Environments
 
 | Environment | Partner API | SDK CDN | `sandbox` |
 | --- | --- | --- | --- |
@@ -482,7 +494,7 @@ If you embed a custom WebView instead of `JustGoldConnect`, handle `OPEN_EXTERNA
 
 ---
 
-## 13. Platform setup
+## 14. Platform setup
 
 ### Android
 
@@ -499,7 +511,7 @@ Standard HTTPS (App Transport Security). No ATS exceptions required.
 
 ---
 
-## 14. Troubleshooting
+## 15. Troubleshooting
 
 | Symptom | Likely cause | Fix |
 | --- | --- | --- |
@@ -517,7 +529,7 @@ Enable debug logs during integration:
 
 ---
 
-## 15. Production checklist
+## 16. Production checklist
 
 - [ ] Session tokens from your backend only — `client_secret` never in the app
 - [ ] `sandbox={false}` (or omit) for production builds

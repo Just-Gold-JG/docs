@@ -1,6 +1,6 @@
 # Flutter SDK Integration
 
-Embed the JustGold gold & silver trading UI in your Flutter app with **`justgold_sdk`** (^1.1.12) on [pub.dev](https://pub.dev/packages/justgold_sdk).
+Embed the JustGold gold & silver trading UI in your Flutter app with **`justgold_sdk`** (^1.1.16) on [pub.dev](https://pub.dev/packages/justgold_sdk).
 
 The wrapper loads the UI from **JustGold CDN** automatically — no separate UI deploy.
 
@@ -15,7 +15,7 @@ The wrapper loads the UI from **JustGold CDN** automatically — no separate UI 
 | Backend session endpoint (HMAC) | Trading UI via CDN |
 | Navigation to/from SDK screen | Buy, sell, delivery flows inside WebView |
 | Payment collection UI | Quote preview, transaction creation |
-| `PATCH /v1/transactions/:id` from backend | Invoice download, Help, FAQs |
+| `PATCH /v1/transactions/:id` from backend | Invoice preview/share, Help, FAQs |
 | Token refresh when SDK asks | Silent JWT renewal (~60s before expiry) |
 
 ---
@@ -50,7 +50,7 @@ sequenceDiagram
 
 ```yaml
 dependencies:
-  justgold_sdk: ^1.1.12
+  justgold_sdk: ^1.1.16
 ```
 
 ```bash
@@ -223,6 +223,9 @@ class _TradingScreenState extends State<TradingScreen> {
       onAnalytics: (event) {
         debugPrint('ANALYTICS ${event['name']} ${event['params']}');
       },
+      // Fill PDF widget payload.form.fields.customerName — see Invoice share & download
+      onInvoiceShare: (payload) => fillAndHandoffInvoice(payload, customerFullName),
+      onInvoiceDownload: (payload) => fillAndHandoffInvoice(payload, customerFullName),
       onNavigation: (payload) => debugPrint('Route: ${payload['route']}'),
       onError: (err) {
         if (err['fatal'] == true) {
@@ -341,6 +344,8 @@ Charge **`grandTotal`**, not `amount`. The `amount` field is the subtotal exclud
 | `onError` | `{ code, message, fatal? }` — if `fatal`, show your UI or close; otherwise log |
 | `onLog` | Structured log map |
 | `onAnalytics` | UI taps (`ANALYTICS` / Invest_*). Optional — [catalog](sdk/analytics.md) |
+| `onInvoiceShare` | Fill AcroForm `customerName` and share. Opt-in — [handoff](sdk/invoice-handoff.md) |
+| `onInvoiceDownload` | Fill AcroForm `customerName` and save. Opt-in — [handoff](sdk/invoice-handoff.md) |
 | `onSdkEvent` | Catch-all outbound event as `Map` |
 
 Payment payload fields: `transactionId`, `type` (`buy` \| `sell` \| `delivery`), `amount` (subtotal), `grandTotal` (charge amount), `currency`, `metal`, `quantity`, plus optional fee breakup fields. **Delivery** also includes `metalSummary` with per-metal `gold` / `silver` entries (`quantity` + `amount`) when the cart mixes metals — see [Bridge events](sdk/bridge-events.md#trading-amounts--metal-breakdown).
@@ -456,9 +461,15 @@ Set `allowNativeNavigation: true` to allow OS-level back gestures.
 
 ---
 
-## 11. External links (invoice PDF, Help contacts)
+## 11. Invoice share & download (opt-in)
 
-The SDK UI emits **`OPEN_EXTERNAL_URL`** for invoice PDFs and Help screen links (`mailto:`, `tel:`, WhatsApp).
+Partners who must stamp the customer's name on the tax invoice pass `onInvoiceShare` / `onInvoiceDownload`. The SDK then emits `INVOICE_SHARE` / `INVOICE_DOWNLOAD` with a presigned URL and AcroForm field **`customerName`** — it does not preview the unfilled PDF.
+
+Full contract and copy-paste examples: **[Invoice share & download](sdk/invoice-handoff.md)**.
+
+## 12. External links (Help contacts)
+
+The SDK UI emits **`OPEN_EXTERNAL_URL`** for Help screen links (`mailto:`, `tel:`, WhatsApp).
 
 **`JustGoldConnect` opens these automatically** via `url_launcher` — no partner callback required.
 
@@ -466,7 +477,7 @@ Custom WebView hosts must handle the event manually — see [Bridge reference](s
 
 ---
 
-## 12. In-SDK features (SDK 1.1.12)
+## 13. In-SDK features (SDK 1.1.16)
 
 Partners do not implement these screens — they are included in the embedded UI:
 
@@ -476,14 +487,14 @@ Partners do not implement these screens — they are included in the embedded UI
 | `/help` | Support contacts (email, WhatsApp, call) |
 | `/faqs` | Full FAQ list with expandable answers |
 | `/returns-calculator` | Future returns estimator |
-| `/transactions`, `/transactions/:id` | History and detail with invoice download |
+| `/transactions`, `/transactions/:id` | History and detail with invoice preview/share. Host fill: [invoice handoff](sdk/invoice-handoff.md) |
 | `/delivery/*` | Product catalog, cart, checkout, tracking (only when org delivery is enabled) |
 
-Tap-level `Invest_*` events: [SDK analytics](sdk/analytics.md). Screen changes: `onNavigation` / `NAVIGATION`.
+Tap-level `Invest_*` events: [SDK analytics](sdk/analytics.md). Invoice host fill: [Invoice share & download](sdk/invoice-handoff.md). Screen changes: `onNavigation` / `NAVIGATION`.
 
 ---
 
-## 13. Environments
+## 14. Environments
 
 | Environment | Partner API | SDK CDN | `sandbox` |
 | --- | --- | --- | --- |
@@ -492,7 +503,7 @@ Tap-level `Invest_*` events: [SDK analytics](sdk/analytics.md). Screen changes: 
 
 ---
 
-## 14. Platform requirements
+## 15. Platform requirements
 
 | Platform | Requirement |
 | --- | --- |
@@ -507,7 +518,7 @@ Tap-level `Invest_*` events: [SDK analytics](sdk/analytics.md). Screen changes: 
 
 ---
 
-## 15. Troubleshooting
+## 16. Troubleshooting
 
 | Symptom | Likely cause | Fix |
 | --- | --- | --- |
@@ -528,7 +539,7 @@ JustGoldConnect(
 
 ---
 
-## 16. Production checklist
+## 17. Production checklist
 
 - [ ] Session tokens from your backend only — `client_secret` never in the app
 - [ ] `sandbox: false` for production builds
