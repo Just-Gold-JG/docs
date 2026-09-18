@@ -8,8 +8,8 @@ Requires:
 
 | Platform | Package | Version |
 | --- | --- | --- |
-| React Native | `@justgold/rn-sdk` | ^1.1.12 |
-| Flutter | `justgold_sdk` | ^1.1.16 |
+| React Native | `@justgold/rn-sdk` | ^1.1.14 |
+| Flutter | `justgold_sdk` | ^1.1.18 |
 | Embedded UI | JustGold CDN | deployed with this release |
 
 ---

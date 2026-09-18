@@ -8,9 +8,9 @@ Requires:
 
 | Platform | Package | Version |
 | --- | --- | --- |
-| React Native | `@justgold/rn-sdk` | ^1.1.12 |
-| Flutter | `justgold_sdk` | ^1.1.16 |
-| Embedded UI | JustGold CDN | `1.1.12` / `latest` (sandbox: `sdk.stage.justgold.app`) |
+| React Native | `@justgold/rn-sdk` | ^1.1.14 |
+| Flutter | `justgold_sdk` | ^1.1.18 |
+| Embedded UI | JustGold CDN | `1.1.14` / `latest` (sandbox: `sdk.stage.justgold.app`) |
 
 Passing **either** `onInvoiceShare` or `onInvoiceDownload` opts the host in. Wrappers set `useHostInvoiceActions: true` on `INIT_SESSION`. The SDK still ensures the invoice exists (`GET /v1/customers/:id/transactions/:txnId/invoice`, then `POST /v1/customers/invoice` on 404), then emits the event. It does **not** preview the unfilled PDF and does **not** put PDF bytes on the WebView message.
 

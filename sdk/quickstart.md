@@ -4,8 +4,8 @@ Integrate JustGold gold & silver trading into your **React Native** or **Flutter
 
 | Platform | Package | Version | Registry |
 | --- | --- | --- | --- |
-| React Native | `@justgold/rn-sdk` | ^1.1.12 | [npm](https://www.npmjs.com/package/@justgold/rn-sdk) |
-| Flutter | `justgold_sdk` | ^1.1.16 | [pub.dev](https://pub.dev/packages/justgold_sdk) |
+| React Native | `@justgold/rn-sdk` | ^1.1.14 | [npm](https://www.npmjs.com/package/@justgold/rn-sdk) |
+| Flutter | `justgold_sdk` | ^1.1.18 | [pub.dev](https://pub.dev/packages/justgold_sdk) |
 | Backend (all platforms) | `@justgold/partner-sdk` | ^1.0.0 | [npm](https://www.npmjs.com/package/@justgold/partner-sdk) |
 
 > **You do not host the trading UI.** Mobile wrappers load it from JustGold CDN via a short-lived signed URL (`GET /v1/sdk/ui-url`). Your app only needs session tokens from your backend.
@@ -80,7 +80,7 @@ Full reference: [Session Token](sdk/session-token.md) · [Request Signing](../ap
 ### React Native
 
 ```bash
-yarn add @justgold/rn-sdk@^1.1.12 react-native-webview react-native-safe-area-context
+yarn add @justgold/rn-sdk@^1.1.14 react-native-webview react-native-safe-area-context
 cd ios && pod install
 ```
 
@@ -90,7 +90,7 @@ Wrap your app (or SDK screen) in `SafeAreaProvider`.
 
 ```yaml
 dependencies:
-  justgold_sdk: ^1.1.16
+  justgold_sdk: ^1.1.18
 ```
 
 ```bash
@@ -332,7 +332,7 @@ Help screen links (`mailto:`, `tel:`, WhatsApp) are handled **automatically** by
 
 ---
 
-## What's included in SDK 1.1.12 / 1.1.16
+## What's included in SDK 1.1.14 / 1.1.18
 
 The embedded UI includes:
 
