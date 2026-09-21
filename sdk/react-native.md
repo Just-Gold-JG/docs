@@ -498,6 +498,8 @@ If you embed a custom WebView instead of `JustGoldConnect`, handle `OPEN_EXTERNA
 
 ### Android
 
+Minimum supported version: **Android 7.0 (API level 24)**.
+
 ```xml
 <!-- android/app/src/main/AndroidManifest.xml -->
 <uses-permission android:name="android.permission.INTERNET"/>
@@ -506,6 +508,8 @@ If you embed a custom WebView instead of `JustGoldConnect`, handle `OPEN_EXTERNA
 Without this permission, CDN and API calls fail in release APKs.
 
 ### iOS
+
+Minimum supported version: **iOS 13.0**.
 
 Standard HTTPS (App Transport Security). No ATS exceptions required.
 

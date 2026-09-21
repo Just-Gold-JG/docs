@@ -8,6 +8,13 @@ Integrate JustGold gold & silver trading into your **React Native** or **Flutter
 | Flutter | `justgold_sdk` | ^1.1.18 | [pub.dev](https://pub.dev/packages/justgold_sdk) |
 | Backend (all platforms) | `@justgold/partner-sdk` | ^1.0.0 | [npm](https://www.npmjs.com/package/@justgold/partner-sdk) |
 
+### Minimum mobile OS versions
+
+| SDK | Android | iOS |
+| --- | --- | --- |
+| React Native | Android 7.0+ (API level 24+) | iOS 13.0+ |
+| Flutter | Android 5.0+ (API level 21+) | iOS 12.0+ |
+
 > **You do not host the trading UI.** Mobile wrappers load it from JustGold CDN via a short-lived signed URL (`GET /v1/sdk/ui-url`). Your app only needs session tokens from your backend.
 
 ---

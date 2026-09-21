@@ -507,8 +507,8 @@ Tap-level `Invest_*` events: [SDK analytics](sdk/analytics.md). Invoice host fil
 
 | Platform | Requirement |
 | --- | --- |
-| Android | `INTERNET` in **main** manifest (required for release APKs) |
-| iOS | HTTPS under App Transport Security |
+| Android | Android 5.0+ (API level 21+); `INTERNET` in **main** manifest (required for release APKs) |
+| iOS | iOS 12.0+; HTTPS under App Transport Security |
 | Flutter | SDK `>=3.0.0`, Flutter `>=3.10.0` |
 
 ```xml
