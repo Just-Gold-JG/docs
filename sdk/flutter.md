@@ -1,6 +1,6 @@
 # Flutter SDK Integration
 
-Embed the JustGold gold & silver trading UI in your Flutter app with **`justgold_sdk`** (^1.1.21) on [pub.dev](https://pub.dev/packages/justgold_sdk).
+Embed the JustGold gold & silver trading UI in your Flutter app with **`justgold_sdk`** (^1.1.22) on [pub.dev](https://pub.dev/packages/justgold_sdk).
 
 The wrapper loads the UI from **JustGold CDN** automatically — no separate UI deploy.
 
@@ -50,7 +50,7 @@ sequenceDiagram
 
 ```yaml
 dependencies:
-  justgold_sdk: ^1.1.21
+  justgold_sdk: ^1.1.22
 ```
 
 ```bash
@@ -477,7 +477,7 @@ Custom WebView hosts must handle the event manually — see [Bridge reference](s
 
 ---
 
-## 13. In-SDK features (SDK 1.1.21)
+## 13. In-SDK features (SDK 1.1.22)
 
 Partners do not implement these screens — they are included in the embedded UI:
 
