@@ -230,8 +230,8 @@ Full guide: [Flutter integration](sdk/flutter.md)
 - **Never** embed `client_id` / `client_secret` in mobile app code.
 - Expose a **your-backend-only** session endpoint (e.g. `POST /api/justgold/session`) that returns tokens to authenticated users.
 - Match the **`sandbox`** flag on the SDK to the environment your HMAC credentials target:
-  - Sandbox API: `https://api.dev.partner.justgold.app`
-  - Production API: `https://api.partner.justgold.app`
+  - Stage API: `https://api.stage.uae.partner.justgold.app`
+  - Production API: `https://api.uae.partner.justgold.app`
 
 ---
 

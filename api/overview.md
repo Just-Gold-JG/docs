@@ -169,6 +169,15 @@ sequenceDiagram
     end
 ```
 
+## Environments
+
+| Environment | Base URL |
+| --- | --- |
+| Stage | `https://api.stage.uae.partner.justgold.app` |
+| Production | `https://api.uae.partner.justgold.app` |
+
+Endpoints are region-specific (currently UAE). Additional regional endpoints may be introduced in the future — your onboarding team will provide the correct base URL for your region.
+
 ## Numeric values
 
 All currency amounts (e.g. `total`, `vat`, `platformFee`, `grandTotal`, `price`, `quotedPrice`) and metal quantities (e.g. `quantity`) are returned as **strings**, not numbers, to preserve precision. Do not parse them with native floating-point types — use an arbitrary-precision decimal library such as [decimal.js](https://mikemcl.github.io/decimal.js/) for any arithmetic or display formatting.

@@ -26,10 +26,12 @@ Both mobile SDKs embed the same trading UI via **`JustGoldConnect`**. Your app r
 
 | Environment | Base URL |
 | --- | --- |
-| Sandbox | `https://api.dev.partner.justgold.app` |
-| Production | `https://api.partner.justgold.app` |
+| Stage | `https://api.stage.uae.partner.justgold.app` |
+| Production | `https://api.uae.partner.justgold.app` |
 
-Pass `sandbox: true` (RN) or `sandbox: true` (Flutter) to the SDK component — partners do not configure `apiBaseUrl` in the client.
+Endpoints are region-specific (currently UAE). Additional regional endpoints may be introduced in the future — your onboarding team will provide the correct base URL for your region.
+
+Pass `sandbox: true` (RN) or `sandbox: true` (Flutter) to the SDK component to target Stage — partners do not configure `apiBaseUrl` in the client.
 
 ---
 
