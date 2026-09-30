@@ -1,8 +1,24 @@
 # React Native SDK Integration
 
-Embed the JustGold gold & silver trading UI in your React Native app with **`@justgold/rn-sdk`**. The UI ships as a pre-built HTML bundle inside the npm package — no CDN or separate UI deploy.
+Embed the JustGold gold & silver trading UI in your React Native app with **`@justgold/rn-sdk`** (^1.1.18).
 
-> **Prerequisites:** [Session Token](sdk/session-token.md) from your backend · [SDK Overview](sdk/overview.md)
+The wrapper loads the UI from **JustGold CDN** automatically — no separate UI deploy, no `sdkUrl` in normal integration.
+
+> **Start here:** [Mobile SDK Quickstart](sdk/quickstart.md) · **Prerequisites:** [Session Token](sdk/session-token.md)
+
+---
+
+## What you build vs what JustGold provides
+
+| You build | JustGold provides |
+| --- | --- |
+| Backend session endpoint (HMAC) | Trading UI via CDN |
+| Navigation to/from SDK screen | Buy, sell, delivery flows inside WebView |
+| Payment collection UI | Quote preview, transaction creation |
+| `PATCH /v1/transactions/:id` from backend | Invoice preview/share, Help, FAQs |
+| Token refresh when SDK asks | Silent JWT renewal (~60s before expiry) |
+
+---
 
 ## Integration shape
 
@@ -10,25 +26,23 @@ Embed the JustGold gold & silver trading UI in your React Native app with **`@ju
 flowchart TD
     A[User opens gold feature] --> B[App calls your backend]
     B --> C[Backend returns sessionToken + refreshToken]
-    C --> D[Render JustGold SDK]
-    D --> E[SDK UI loads and calls JustGold API]
+    C --> D[JustGoldConnect fetches signed CDN URL]
+    D --> E[WebView shows trading UI]
     E --> F{Callback}
     F -->|onClose| G[Dismiss SDK]
-    F -->|onPaymentRequest| H[Partner payment UI]
-
-
+    F -->|onPaymentRequired| H[Partner payment UI on top]
+    H --> I[Backend PATCH transaction]
+    I --> J[SDK shows success/failure]
 ```
-
-Your backend still owns HMAC credentials and customer mapping. The mobile app receives only short-lived JWTs — see [Session Token](sdk/session-token.md).
 
 ---
 
-## 1. Install the package
+## 1. Install
 
 ```bash
-npm install @justgold/rn-sdk react-native-webview react-native-safe-area-context
+yarn add @justgold/rn-sdk@^1.1.18 react-native-webview react-native-safe-area-context
 # or
-yarn add @justgold/rn-sdk react-native-webview react-native-safe-area-context
+npm install @justgold/rn-sdk@^1.1.18 react-native-webview react-native-safe-area-context
 ```
 
 ### Peer dependencies
@@ -42,17 +56,21 @@ yarn add @justgold/rn-sdk react-native-webview react-native-safe-area-context
 
 ### iOS
 
-Install native dependencies after adding the packages:
-
 ```bash
 cd ios && pod install
+```
+
+Wrap your app (or SDK screen) in `SafeAreaProvider`:
+
+```tsx
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 ```
 
 ---
 
 ## 2. Fetch a session from your backend
 
-Do **not** put `client_secret` in the mobile app. Call **your** backend, which signs `POST /v1/customers/{customerIdentifier}/token` with HMAC and returns:
+Do **not** put `client_secret` in the mobile app. Call **your** backend, which signs `POST /v1/customers/{customerIdentifier}/token` with HMAC:
 
 ```json
 {
@@ -61,13 +79,11 @@ Do **not** put `client_secret` in the mobile app. Call **your** backend, which s
 }
 ```
 
-See [Session Token](sdk/session-token.md) and [Request Signing](../api/request-signing.md).
+See [Session Token](sdk/session-token.md).
 
 ---
 
-## 3. Embed the SDK
-
-Wrap your screen (or app root) in `SafeAreaProvider`, then render `JustGoldConnect`:
+## 3. Minimal embed
 
 ```tsx
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -83,11 +99,14 @@ export function TradingScreen({ jwt, refreshToken, onDone }: Props) {
         locale="en"
         theme={{ mode: 'light', primaryColor: '#2563eb' }}
         onClose={onDone}
-
-        onPaymentRequest={(transaction) => {
-          navigation.navigate('PartnerPayment', transaction);
+        onSessionExpired={() => refreshSessionFromBackend()}
+        onAuthRequired={() => refreshSessionFromBackend()}
+        onTokensRefreshed={({ sessionToken, refreshToken: rt }) => persistTokens(sessionToken, rt)}
+        onPaymentRequired={(payload) => navigation.navigate('PartnerPayment', payload)}
+        onError={(err) => {
+          if (err.fatal) onDone();
+          else console.warn(err.message);
         }}
-        onError={(err) => console.warn(err)}
       />
     </SafeAreaProvider>
   );
@@ -96,148 +115,443 @@ export function TradingScreen({ jwt, refreshToken, onDone }: Props) {
 
 | Prop | Notes |
 | --- | --- |
-| `sandbox` | `true` → sandbox API (`api.dev.partner.justgold.app`); omit or `false` → production |
+| `sandbox` | `true` → sandbox API + CDN; omit or `false` → production |
 | `locale` | `'en'` or `'ar'` |
-| `theme` | Light/dark mode, brand colors, optional partner branding (logo, wallet name) |
 | `refreshToken` | Enables automatic silent renewal ~60s before JWT expiry |
 
-Partners do **not** pass `apiBaseUrl` — the wrapper resolves it from the `sandbox` flag.
+Partners do **not** pass `apiBaseUrl` — the wrapper resolves it from `sandbox`.
 
 ---
 
-## 4. Component props
+## 4. Complete production example
+
+Production apps should hold tokens in React state and refresh when the SDK asks:
+
+```tsx
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import {
+  JustGoldConnect,
+  type PaymentRequiredPayload,
+  type SdkTheme,
+} from '@justgold/rn-sdk';
+
+type Props = {
+  sandbox?: boolean;
+  onDone: () => void;
+};
+
+export function TradingScreen({ sandbox = false, onDone }: Props) {
+  const [token, setToken] = useState<string | null>(null);
+  const [refreshToken, setRefreshToken] = useState<string | undefined>();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const reissueSession = useCallback(async () => {
+    const next = await yourBackend.fetchJustGoldSession();
+    setToken(next.sessionToken);
+    setRefreshToken(next.refreshToken);
+    await secureStorage.set('jg_refresh', next.refreshToken);
+  }, []);
+
+  useEffect(() => {
+    reissueSession()
+      .catch(e => setError(e instanceof Error ? e.message : 'Session failed'))
+      .finally(() => setLoading(false));
+  }, [reissueSession]);
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  if (error || !token) {
+    return null; // show your error UI
+  }
+
+  const theme: SdkTheme = {
+    mode: 'light',
+    primaryColor: '#2563eb',
+    branding: {
+      partnerName: 'Your Brand',
+      walletName: 'Gold Wallet',
+      logoUrl: 'https://cdn.example.com/logo.png',
+      // Optional — Help screen contacts (defaults match JustGold B2C app)
+      // supportEmail: 'support@yourbrand.com',
+      // supportPhone: '+971 589361909',
+      // supportWhatsApp: '+971 589361909',
+    },
+  };
+
+  return (
+    <SafeAreaProvider>
+      <JustGoldConnect
+        key={token}
+        token={token}
+        refreshToken={refreshToken}
+        sandbox={sandbox}
+        locale="en"
+        theme={theme}
+        logLevel="warn"
+        allowNativeNavigation={false}
+        onClose={onDone}
+        onSessionExpired={reissueSession}
+        onAuthRequired={reissueSession}
+        onTokensRefreshed={({ sessionToken, refreshToken: rt }) => {
+          setToken(sessionToken);
+          setRefreshToken(rt);
+          if (rt) secureStorage.set('jg_refresh', rt);
+        }}
+        onPaymentRequired={(payload: PaymentRequiredPayload) => {
+          navigation.navigate('PartnerPayment', {
+            transactionId: payload.transactionId,
+            chargeAmount: payload.grandTotal,
+            currency: payload.currency,
+            type: payload.type,
+          });
+        }}
+        onPartnerFeeRequest={async ({ operation, metal }) => {
+          return yourBackend.fetchPlatformFee(operation, metal);
+        }}
+        onSuccess={txn => analytics.track('justgold_complete', txn)}
+        onAnalytics={({ name, params }) => analytics.track(name, params)}
+        {/* Fill PDF widget payload.form.fields.customerName — see Invoice share & download */}
+        onInvoiceShare={payload => fillAndHandoffInvoice(payload, customerFullName)}
+        onInvoiceDownload={payload => fillAndHandoffInvoice(payload, customerFullName)}
+        onNavigation={({ route }) => analytics.track('justgold_route', { route })}
+        onError={err => {
+          if (err.fatal) onDone();
+          else console.warn(`SDK [${err.code}]:`, err.message);
+        }}
+        onLog={({ level, message }) => console.log(`[JustGold ${level}]`, message)}
+      />
+    </SafeAreaProvider>
+  );
+}
+```
+
+Use `key={token}` so the WebView re-initializes when you replace the session after expiry.
+
+---
+
+## 5. Partner payment screen example
+
+```tsx
+import { useState } from 'react';
+import { View, Text, Button, ActivityIndicator } from 'react-native';
+import type { PaymentRequiredPayload } from '@justgold/rn-sdk';
+
+type Props = {
+  payload: PaymentRequiredPayload;
+  onDone: () => void;
+};
+
+export function PartnerPaymentScreen({ payload, onDone }: Props) {
+  const [busy, setBusy] = useState(false);
+
+  async function complete(status: 'Completed' | 'Failed') {
+    setBusy(true);
+    try {
+      await yourBackend.patchTransaction(payload.transactionId, {
+        status,
+        paymentReference: 'your-psp-ref',
+        paymentMethod: 'card',
+      });
+      onDone(); // navigation.goBack() — SDK polls and shows result
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <View style={{ flex: 1, padding: 24 }}>
+      <Text style={{ fontSize: 24, fontWeight: '600' }}>
+        {payload.currency} {payload.grandTotal.toFixed(2)}
+      </Text>
+      <Text>Transaction {payload.transactionId}</Text>
+      <Text>Type: {payload.type}</Text>
+      {busy ? (
+        <ActivityIndicator />
+      ) : (
+        <>
+          <Button title="Payment complete" onPress={() => complete('Completed')} />
+          <Button title="Payment failed" onPress={() => complete('Failed')} />
+        </>
+      )}
+    </View>
+  );
+}
+```
+
+Charge the customer **`grandTotal`**, not `amount`. The `amount` field is the subtotal excluding fees.
+
+For **delivery** orders with both gold and silver, use `payload.metalSummary.gold` and `payload.metalSummary.silver` for per-metal grams and metal value. Top-level `metal` / `quantity` remain for backward compatibility.
+
+---
+
+## 6. Component props
 
 | Prop | Type | Description |
 | --- | --- | --- |
 | `token` | `string` | **Required.** Session JWT from your backend |
 | `refreshToken` | `string` | Optional refresh token for silent renewal |
-| `sandbox` | `boolean` | Sandbox vs production API |
+| `sandbox` | `boolean` | `true` → sandbox API + CDN; omit/`false` → production |
 | `locale` | `string` | `'en'` or `'ar'` |
-| `theme` | `SdkTheme` | Mode, colors, partner branding |
-| `platformFee` | `number` | Optional flat platform fee for preview APIs |
-| `logLevel` | `string` | `debug` \| `info` \| `warn` \| `error` (default `warn`) |
-| `onClose` | `() => void` | User closed the SDK |
-| `onPaymentRequest` | `(transaction, resume) => void` | Open partner payment UI — see below |
-| `onError` | `(payload) => void` | Unrecoverable SDK error |
-| `onLog` | `(payload) => void` | Optional structured SDK logs |
-| `onResolvePlatformFee` | `({ transactionType, amount, quantity, deliveryFee, mintingFee }) => Promise<number>` | Async callback — return a dynamic platform fee instead of `platformFee` |
+| `theme` | `SdkTheme` | Mode, colors, `PartnerBranding` |
+| `platformFee` | `number` | Flat fee for quote previews; omit for dynamic/org default |
+| `allowNativeNavigation` | `boolean` | `false` (default) blocks Android back and iOS swipe-back |
+| `logLevel` | `SdkLogLevel` | `debug` \| `info` \| `warn` \| `error` (default `warn`). Proxied API console logs need `debug` **and** `__DEV__` |
+| `sdkUrl` | `string` | Optional CDN URL override (advanced) |
+| `sdkUiSignedUrl` | `string` | Optional pre-signed CDN URL from your backend |
 | `sessionRenewDelayMs` | `number` | **Testing only** — omit in production |
+| `onClose` | `() => void` | User closed SDK |
+| `onSessionExpired` | `() => void` | Re-issue session |
+| `onAuthRequired` | `(payload) => void` | Re-issue session (`reason` in payload) |
+| `onTokensRefreshed` | `(payload) => void` | Persist new refresh token |
+| `onPaymentRequired` | `(payload, resume) => void` | Open partner payment UI |
+| `onPartnerFeeRequest` | `(payload) => PartnerFeeBreakup \| number \| null \| Promise<…>` | Dynamic platform fee before preview |
+| `onPartnerAction` | `(payload) => void` | User tapped `proceed` on fee error dialog (e.g. ADD FUNDS) |
+| `onSuccess` | `(payload) => void` | `TRANSACTION_COMPLETE` |
+| `onNavigation` | `(payload) => void` | In-SDK route changes |
+| `onAnalytics` | `(payload) => void` | UI taps (`ANALYTICS` / Invest_*). Optional — [catalog](sdk/analytics.md) |
+| `onInvoiceShare` | `(payload) => void` | Fill AcroForm `customerName` and share. Opt-in — [handoff](sdk/invoice-handoff.md) |
+| `onInvoiceDownload` | `(payload) => void` | Fill AcroForm `customerName` and save. Opt-in — [handoff](sdk/invoice-handoff.md) |
+| `onQuotePreviewed` | `(payload) => void` | Preview API succeeded |
+| `onTransactionConfirmed` | `(payload) => void` | Transaction created (usually `Pending`) |
+| `onDeliveryComplete` | `(payload) => void` | Delivery order placed |
+| `onError` | `(payload) => void` | `{ code, message, fatal? }` — if `fatal`, show your UI or close; otherwise log |
+| `onLog` | `(payload) => void` | Structured SDK logs |
+| `onSdkEvent` | `(event) => void` | Catch-all for every outbound event |
 
----
-
-## 5. Handle SDK callbacks
-
-| Callback | When | Your action |
-| --- | --- | --- |
-| `onClose` | User taps close | Navigate back / dismiss SDK screen |
-| `onPaymentRequest` | User confirmed quote; payment is partner-side | Open payment UI → PATCH transaction status |
-| `onResolvePlatformFee` | SDK needs to resolve the platform fee dynamically | Return a `Promise<number>` with the fee amount |
-| `onAuthExpired` | Authentication failed or session cannot be renewed | Re-issue a fresh session from your backend |
-| `onError` | SDK error | Log and show a recoverable message |
+Import typed payloads from `@justgold/rn-sdk` or `@justgold/sdk-bridge`:
 
 ```tsx
-<JustGoldConnect
-  token={sessionToken}
-  refreshToken={refreshToken}
-  onClose={() => navigation.goBack()}
-  onAuthExpired={async () => {
-    const { sessionToken, refreshToken } = await fetchSessionFromBackend();
-    setSessionToken(sessionToken);
-    setRefreshToken(refreshToken);
-  }}
-  onPaymentRequest={(transaction) => navigation.navigate('PartnerPayment', transaction)}
-  onResolvePlatformFee={async ({ transactionType, amount, quantity, deliveryFee, mintingFee }) => {
-    const fee = await fetchPlatformFee({ transactionType, amount, quantity, deliveryFee, mintingFee });
-    return fee;
-  }}
-  onError={(err) => console.warn('SDK error', err)}
-/>
+import type {
+  PaymentRequiredPayload,
+  PartnerFeeRequestPayload,
+  TokensRefreshedPayload,
+  InvoiceHostPayload,
+} from '@justgold/rn-sdk';
 ```
 
 ---
 
-## 6. Full-page payment
-
-When the user confirms a buy, sell, or delivery quote, the SDK creates a **Pending** transaction and emits **`PAYMENT_REQUESTED`**. Your app collects payment using your PCI-compliant stack, then updates status via the partner HMAC API:
-
-```http
-PATCH /v1/transactions/:transactionId
-```
-
-See [Transactions](../api/transactions.md).
-
-### Recommended flow
-
-Keep `JustGoldConnect` **mounted**. Push or present payment UI on top (modal, overlay, or new screen). The SDK polls transaction status every 2s on its internal pending screen.
+## 7. Theming & branding
 
 ```tsx
-onPaymentRequest={(transaction) => navigation.navigate('PartnerPayment', transaction)}
+const theme: SdkTheme = {
+  mode: 'light',
+  primaryColor: '#2563eb',
+  branding: {
+    partnerName: 'Your Bank',
+    walletName: 'Premier Gold Wallet',
+    logoUrl: 'https://cdn.example.com/logo.png',
+    supportEmail: 'support@yourbrand.com',
+    supportPhone: '+971 589361909',
+    supportWhatsApp: '+971 589361909',
+  },
+};
+```
+
+| Branding field | Description |
+| --- | --- |
+| `partnerName` | Label in UI copy. Defaults to org name from API when omitted |
+| `walletName` | Wallet label in payment flows. Defaults to `"{partnerName} Wallet"` |
+| `logoUrl` | HTTPS partner logo |
+| `supportEmail` | Help screen email. Default `support@justgold.app` |
+| `supportPhone` | Help screen call button. Default `+971 589361909` |
+| `supportWhatsApp` | Help screen WhatsApp. Defaults to `supportPhone` |
+
+Logo URLs must be **HTTPS**.
+
+---
+
+## 8. Payment handoff
+
+When the user confirms a buy, sell, or delivery quote, the SDK creates a **Pending** transaction and emits **`PAYMENT_REQUIRED`** (handled via `onPaymentRequired`).
+
+### Recommended flow (overlay)
+
+Keep `JustGoldConnect` **mounted**. Push payment UI on top:
+
+```tsx
+onPaymentRequired={(payload) => navigation.navigate('PartnerPayment', payload)}
 
 // PartnerPayment screen:
 // 1. Collect payment (your PSP / wallet)
 // 2. PATCH /v1/transactions/:id from your backend (HMAC)
-// 3. navigation.goBack() — SDK shows success/failure automatically
+//    Completed / Failed — then goBack(); SDK shows the result
+//    Cancelled — user tapped Back; then goBack(); SDK restores buy/sell with the original amount
 ```
+
+The SDK polls transaction status every 2s on its internal pending screen.
+
+### User dismisses payment (Back)
+
+On payment-page Back (or OS back), **PATCH `Cancelled`** then close the payment UI. Do not leave the transaction `Pending`.
+
+- Overlay: `goBack()` uncovers the SDK. Poll sees `Cancelled` and opens buy (subtotal `amount`) or sell (grams). Delivery returns to cart.
+- Remount: remount with the same tokens. The wrapper still sends `resumePaymentTransactionId`; the SDK restores the form, not pending.
+
+If payment stays `Pending` for **10 minutes**, JustGold marks it `Stale`. The SDK must not keep the pending payment UI — it treats `Stale` (and client-side pending older than 10 minutes) the same as cancel. Hosts must **not** PATCH `Stale`.
+
+`Failed` still shows the payment-failed result (not the amount form).
 
 ### Unmounting during payment
 
-If you **must unmount** `JustGoldConnect` during payment (e.g. native PSP SDK), remount it with the **same** `token` and `refreshToken` after PATCH. The `@justgold/rn-sdk` wrapper caches the session and restores the payment route automatically. Do **not** re-fetch tokens unless the session expired.
+If you **must unmount** `JustGoldConnect` (e.g. native PSP SDK), remount with the **same** `token` and `refreshToken` after PATCH. The wrapper caches the session and restores pending/result **or** the buy/sell form when the transaction is `Cancelled` / `Stale`. Do **not** re-fetch tokens unless expired.
 
 ### Optional: `resume(transactionId)`
 
-The second argument to `onPaymentRequest` posts `PAYMENT_RESULT` to the SDK for instant navigation. **Not required** for the recommended overlay flow or when remounting with the same session tokens.
+The second argument to `onPaymentRequired` posts `PAYMENT_RESULT` for instant navigation. **Not required** when the SDK stays mounted.
 
 ---
 
-## 7. Metro configuration
+## 9. Dynamic platform fees
 
-Metro must treat `.html` as an asset so the bundled UI loads correctly. Add to your `metro.config.js`:
+Three ways to supply platform fee before buy/sell/delivery preview:
 
-```js
-const { getDefaultConfig } = require('@react-native/metro-config');
+1. **Static** — `platformFee={5.0}` prop
+2. **Imperative** — `connectRef.current?.setPlatformFee(5.0)`
+3. **Dynamic** — `onPartnerFeeRequest` callback
 
-const config = getDefaultConfig(__dirname);
-config.resolver.assetExts.push('html');
-
-module.exports = config;
+```tsx
+onPartnerFeeRequest={async ({ operation, metal, mintingFee, deliveryFee }) => {
+  // Return flat platform fee, or full breakup for delivery:
+  return {
+    platformFee: 5.0,
+    platformFeeTax: 0.25,
+    mintingFeeToJustGold: 31.5,
+    mintingFeeToSp: 13.5,
+  };
+  // Legacy: return 5.0 for platform fee only
+  // Return null to use org default from JustGold API
+}}
 ```
 
-If you consume `@justgold/rn-sdk` from a monorepo workspace, also configure `watchFolders` and `nodeModulesPaths` so Metro resolves the package and its bundled UI assets.
+If your callback throws or times out (**60 seconds**), the SDK falls back to the org default fee.
+
+To **reject** a transaction before preview (e.g. insufficient balance), return a breakup with `error`. With valid `actions`, the SDK shows a dialog; without `actions`, it blocks silently. Handle `proceed` via `onPartnerAction`:
+
+```tsx
+onPartnerFeeRequest={async () => ({
+  platformFee: 0,
+  error: {
+    code: 1001,
+    title: 'Insufficient balance',
+    description: 'Sorry, you do not have the sufficient balance in your wallet.',
+    actions: [
+      { id: 'add_funds', label: 'ADD FUNDS', style: 'primary', outcome: 'proceed' },
+      { id: 'close', label: 'Close', style: 'secondary', outcome: 'cancel' },
+    ],
+  },
+})}
+onPartnerAction={({ actionId }) => {
+  if (actionId === 'add_funds') openWalletTopUp();
+}}
+```
+
+Send Arabic `title` / `description` / `label` when session `locale` is `ar` — the SDK does not translate partner strings.
 
 ---
 
-## 8. Permissions
+## 10. Native navigation
 
-The SDK does **not** declare sensitive device permissions (camera, location, contacts, biometrics).
+By default (`allowNativeNavigation={false}`), the wrapper blocks Android hardware back and iOS WebView swipe-back. Users navigate with in-SDK header back/close only.
 
-Your app must declare:
+Set `allowNativeNavigation={true}` to allow OS-level back gestures in addition to SDK controls.
 
-| Platform | Permission | Reason |
+In-SDK navigation uses explicit routes (e.g. Home → FAQs → Help) — not browser history back — so behaviour stays predictable inside WebViews.
+
+---
+
+## 11. Invoice share & download (opt-in)
+
+Partners who must stamp the customer's name on the tax invoice pass `onInvoiceShare` / `onInvoiceDownload`. The SDK then emits `INVOICE_SHARE` / `INVOICE_DOWNLOAD` with a presigned URL and AcroForm field **`customerName`** — it does not preview the unfilled PDF.
+
+Full contract and copy-paste examples: **[Invoice share & download](sdk/invoice-handoff.md)**.
+
+## 12. External links (Help contacts)
+
+The SDK UI opens Help screen links (`mailto:`, `tel:`, WhatsApp) via the **`OPEN_EXTERNAL_URL`** bridge event.
+
+**`JustGoldConnect` handles this automatically** with `Linking.openURL` — no partner callback required.
+
+If you embed a custom WebView instead of `JustGoldConnect`, handle `OPEN_EXTERNAL_URL` yourself — see [Bridge reference](sdk/bridge-events.md#open_external_url).
+
+---
+
+## 13. Environments
+
+| Environment | Partner API | SDK CDN | `sandbox` |
+| --- | --- | --- | --- |
+| Sandbox | `https://api.stage.partner.justgold.app` | `https://sdk.stage.justgold.app` | `true` |
+| Production | `https://api.partner.justgold.app` | `https://sdk.justgold.app` | `false` / omit |
+
+---
+
+## 14. Platform setup
+
+### Android
+
+Minimum supported version: **Android 7.0 (API level 24)**.
+
+```xml
+<!-- android/app/src/main/AndroidManifest.xml -->
+<uses-permission android:name="android.permission.INTERNET"/>
+```
+
+Without this permission, CDN and API calls fail in release APKs.
+
+### iOS
+
+Minimum supported version: **iOS 13.0**.
+
+Standard HTTPS (App Transport Security). No ATS exceptions required.
+
+---
+
+## 15. Troubleshooting
+
+| Symptom | Likely cause | Fix |
 | --- | --- | --- |
-| Android | `INTERNET` | API calls (SDK → native HTTP bridge → JustGold API) |
-| iOS | — | Standard HTTPS under App Transport Security |
+| Blank WebView | Missing `INTERNET` on Android release | Add permission to main manifest |
+| `401` / session errors | Expired JWT, no refresh token | Pass `refreshToken`; implement `onAuthRequired` |
+| Payment stuck on pending | PATCH not called or wrong status | Backend must PATCH `Completed`, `Failed`, or `Cancelled` (Back). Pending older than 10 minutes becomes `Stale` and the SDK leaves pending. |
+| Help links don't work | Custom WebView without bridge handler | Use `JustGoldConnect` or handle `OPEN_EXTERNAL_URL` |
+| Wrong environment | Sandbox credentials with `sandbox={false}` | Match SDK flag to credential environment |
 
-Payment, KYC, and EFR flows outside the SDK use permissions your app declares separately.
+Enable debug logs during integration:
+
+```tsx
+<JustGoldConnect logLevel="debug" onLog={log => console.log(log)} />
+```
 
 ---
 
-## 9. Production checklist
+## 16. Production checklist
 
-- [ ] Session tokens issued from your backend only — `client_secret` never in the app
+- [ ] Session tokens from your backend only — `client_secret` never in the app
 - [ ] `sandbox={false}` (or omit) for production builds
 - [ ] `SafeAreaProvider` wraps `JustGoldConnect`
-- [ ] SDK UI loads (not a blank screen)
-- [ ] Payment flow: `PAYMENT_REQUESTED` → PATCH transaction → close payment UI
-- [ ] Test completed, cancelled, and error paths
-- [ ] Confirm app bundle ID / package name with JustGold onboarding
-- [ ] Webhook and reconciliation configured — see [Webhooks](../webhooks.md)
+- [ ] Android `INTERNET` in main manifest
+- [ ] Payment: `onPaymentRequired` → PATCH `Completed` / `Failed` / `Cancelled` (Back) → close payment UI
+- [ ] Charge `grandTotal` in payment UI
+- [ ] Test completed, failed, and payment-Back (`Cancelled` → restore amount) in sandbox
+- [ ] Confirm bundle ID / package name with JustGold onboarding
+- [ ] Webhooks configured — see [Webhooks](../webhooks.md)
 
 ---
 
 ## Related docs
 
-- [SDK Overview](sdk/overview.md)
+- [Mobile SDK Quickstart](sdk/quickstart.md)
+- [SDK analytics (`Invest_*`)](sdk/analytics.md)
+- [Bridge events & payloads](sdk/bridge-events.md)
 - [Session Token](sdk/session-token.md)
 - [Flutter integration](sdk/flutter.md)
-- [Portal Access](../portal-access.md)
-- [Webhooks](../webhooks.md)
+- [SDK Overview](sdk/overview.md)

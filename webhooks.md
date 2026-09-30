@@ -148,7 +148,7 @@ Sent when a transaction status changes (e.g. `Pending` → `Completed`).
 | --- | --- | --- |
 | `transactionId` | string | Unique transaction identifier. |
 | `type` | string | Transaction type: `Buy`, `Sell`, or `Delivery`. |
-| `status` | string | New status: `Pending`, `Completed`, `Failed`, or `Cancelled`. |
+| `status` | string | New status: `Pending`, `Completed`, `Failed`, or `Cancelled`. Cron `Stale` updates do **not** emit this webhook. |
 | `customerIdentifier` | string | Partner-scoped customer identifier. |
 | `metal` | string | `Gold` or `Silver`. |
 | `quantity` | string | Metal quantity in grams. |

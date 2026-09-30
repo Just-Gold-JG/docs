@@ -19,7 +19,11 @@
   * [Transactions](api/transactions)
 * SDK Integration
   * [Overview](sdk/overview)
+  * [Quickstart (React Native & Flutter)](sdk/quickstart)
   * [Session Token](sdk/session-token)
+  * [Bridge events & payloads](sdk/bridge-events)
+  * [Analytics (`Invest_*`)](sdk/analytics)
+  * [Invoice share & download](sdk/invoice-handoff)
   * [React Native](sdk/react-native)
   * [Flutter](sdk/flutter)
 * [Errors](errors)

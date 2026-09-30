@@ -235,6 +235,33 @@ Full guide: [Flutter integration](sdk/flutter.md)
 
 ---
 
+## SDK UI signed URL (mobile)
+
+React Native and Flutter load the trading UI from JustGold CDN. The Partner API returns a **short-lived signed URL** (TTL **1 hour**):
+
+```http
+GET /v1/sdk/ui-url?sandbox=true
+Authorization: Bearer <sessionToken>
+Accept: application/json
+```
+
+| Param | Description |
+| --- | --- |
+| `sandbox` | `true` for sandbox/stage CDN + API; omit or `false` for production |
+
+**Response:**
+
+```json
+{
+  "url": "https://sdk.stage.justgold.app/latest/index.html?Expires=...&Signature=...",
+  "expiresAt": "2026-07-29T15:26:03.205Z"
+}
+```
+
+**Partners normally do not call this directly** — `@justgold/rn-sdk` and `justgold_sdk` fetch it automatically. Optionally, your backend can return `sdkUiSignedUrl` with the session tokens and pass it to `JustGoldConnect` to skip the in-app fetch.
+
+---
+
 ## Related docs
 
 - [SDK Overview](sdk/overview.md)
