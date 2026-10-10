@@ -230,35 +230,21 @@ Full guide: [Flutter integration](sdk/flutter.md)
 - **Never** embed `client_id` / `client_secret` in mobile app code.
 - Expose a **your-backend-only** session endpoint (e.g. `POST /api/justgold/session`) that returns tokens to authenticated users.
 - Match the **`sandbox`** flag on the SDK to the environment your HMAC credentials target:
-  - Stage API: `https://api.stage.uae.partner.justgold.app`
-  - Production API: `https://api.uae.partner.justgold.app`
+  - Stage API: `https://api.stage.partner.justgold.app`
+  - Production API: `https://api.partner.justgold.app`
 
 ---
 
-## SDK UI signed URL (mobile)
+## SDK UI (mobile)
 
-React Native and Flutter load the trading UI from JustGold CDN. The Partner API returns a **short-lived signed URL** (TTL **1 hour**):
+React Native and Flutter load the trading UI from the public CDN. The Partner API does not return a UI URL, and there is no `GET /v1/sdk/ui-url`.
 
-```http
-GET /v1/sdk/ui-url?sandbox=true
-Authorization: Bearer <sessionToken>
-Accept: application/json
-```
-
-| Param | Description |
+| API host | SDK UI |
 | --- | --- |
-| `sandbox` | `true` for sandbox/stage CDN + API; omit or `false` for production |
+| `api.stage.partner.justgold.app` (`sandbox: true`) | `https://sdk.stage.justgold.app/latest/index.html` |
+| `api.partner.justgold.app` | `https://sdk.justgold.app/latest/index.html` |
 
-**Response:**
-
-```json
-{
-  "url": "https://sdk.stage.justgold.app/latest/index.html?Expires=...&Signature=...",
-  "expiresAt": "2026-07-29T15:26:03.205Z"
-}
-```
-
-**Partners normally do not call this directly** — `@justgold/rn-sdk` and `justgold_sdk` fetch it automatically. Optionally, your backend can return `sdkUiSignedUrl` with the session tokens and pass it to `JustGoldConnect` to skip the in-app fetch.
+Your backend only returns `sessionToken` and `refreshToken`. The mobile wrapper opens the matching CDN page.
 
 ---
 

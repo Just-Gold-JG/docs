@@ -2,7 +2,7 @@
 
 All platforms use the same JSON message envelope. Platform wrappers (`justgold_sdk`, `@justgold/rn-sdk`) translate bridge messages into typed callbacks — partners normally implement **callbacks**, not raw `postMessage`.
 
-**Current SDK version:** React Native **1.1.18**, Flutter **1.1.22**. Tap analytics: [Analytics (`Invest_*`)](sdk/analytics.md). Invoice host fill: [Invoice share & download](sdk/invoice-handoff.md).
+**Current SDK version:** React Native **1.1.19**, Flutter **1.1.23**. Tap analytics: [Analytics (`Invest_*`)](sdk/analytics.md). Invoice host fill: [Invoice share & download](sdk/invoice-handoff.md).
 
 ```json
 { "type": "EVENT_NAME", "payload": {} }
@@ -1516,7 +1516,7 @@ onError: (err) {
 
 | `code` | Cause | Fatal | Host action |
 | --- | --- | --- | --- |
-| `SDK_UI_URL_FAILED` | Token / network / `GET /v1/sdk/ui-url` failed | yes | Show partner error UI or close; retry session |
+| `SDK_UI_URL_FAILED` | Public CDN page failed to resolve | yes | Show partner error UI or close; retry session |
 | `SDK_UI_LOAD_FAILED` | WebView / iframe failed to load CDN HTML | yes | Show partner error UI or close |
 | `SDK_SSL_PINNING_FAILED` | Certificate pin mismatch | yes | Close; do not retry on the same compromised path |
 | `SDK_SESSION_INIT_TIMEOUT` | HTML loaded, no `SESSION_STARTED` after init retries (~6s) | yes | Show partner error UI or close; retry |

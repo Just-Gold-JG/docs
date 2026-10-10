@@ -1,6 +1,6 @@
 # React Native SDK Integration
 
-Embed the JustGold gold & silver trading UI in your React Native app with **`@justgold/rn-sdk`** (^1.1.18).
+Embed the JustGold gold & silver trading UI in your React Native app with **`@justgold/rn-sdk`** (^1.1.19).
 
 The wrapper loads the UI from **JustGold CDN** automatically — no separate UI deploy, no `sdkUrl` in normal integration.
 
@@ -26,7 +26,7 @@ The wrapper loads the UI from **JustGold CDN** automatically — no separate UI 
 flowchart TD
     A[User opens gold feature] --> B[App calls your backend]
     B --> C[Backend returns sessionToken + refreshToken]
-    C --> D[JustGoldConnect fetches signed CDN URL]
+    C --> D[JustGoldConnect loads the public CDN]
     D --> E[WebView shows trading UI]
     E --> F{Callback}
     F -->|onClose| G[Dismiss SDK]
@@ -40,9 +40,9 @@ flowchart TD
 ## 1. Install
 
 ```bash
-yarn add @justgold/rn-sdk@^1.1.18 react-native-webview react-native-safe-area-context
+yarn add @justgold/rn-sdk@^1.1.19 react-native-webview react-native-safe-area-context
 # or
-npm install @justgold/rn-sdk@^1.1.18 react-native-webview react-native-safe-area-context
+npm install @justgold/rn-sdk@^1.1.19 react-native-webview react-native-safe-area-context
 ```
 
 ### Peer dependencies
@@ -305,8 +305,7 @@ For **delivery** orders with both gold and silver, use `payload.metalSummary.gol
 | `platformFee` | `number` | Flat fee for quote previews; omit for dynamic/org default |
 | `allowNativeNavigation` | `boolean` | `false` (default) blocks Android back and iOS swipe-back |
 | `logLevel` | `SdkLogLevel` | `debug` \| `info` \| `warn` \| `error` (default `warn`). Proxied API console logs need `debug` **and** `__DEV__` |
-| `sdkUrl` | `string` | Optional CDN URL override (advanced) |
-| `sdkUiSignedUrl` | `string` | Optional pre-signed CDN URL from your backend |
+| `sdkUrl` | `string` | Optional UI URL override (advanced). Omit this to use the public CDN |
 | `sessionRenewDelayMs` | `number` | **Testing only** — omit in production |
 | `onClose` | `() => void` | User closed SDK |
 | `onSessionExpired` | `() => void` | Re-issue session |

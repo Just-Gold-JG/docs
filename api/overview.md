@@ -173,8 +173,8 @@ sequenceDiagram
 
 | Environment | Base URL |
 | --- | --- |
-| Stage | `https://api.stage.uae.partner.justgold.app` |
-| Production | `https://api.uae.partner.justgold.app` |
+| Stage | `https://api.stage.partner.justgold.app` |
+| Production | `https://api.partner.justgold.app` |
 
 Endpoints are region-specific (currently UAE). Additional regional endpoints may be introduced in the future — your onboarding team will provide the correct base URL for your region.
 
