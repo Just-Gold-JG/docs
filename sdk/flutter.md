@@ -1,6 +1,6 @@
 # Flutter SDK Integration
 
-Embed the JustGold gold & silver trading UI in your Flutter app with **`justgold_sdk`** (^1.1.22) on [pub.dev](https://pub.dev/packages/justgold_sdk).
+Embed the JustGold gold & silver trading UI in your Flutter app with **`justgold_sdk`** (^1.1.23) on [pub.dev](https://pub.dev/packages/justgold_sdk).
 
 The wrapper loads the UI from **JustGold CDN** automatically — no separate UI deploy.
 
@@ -31,8 +31,7 @@ sequenceDiagram
 
     Backend-->>App: sessionToken + refreshToken
     App->>SDK: token + refreshToken props
-    SDK->>JG: GET /v1/sdk/ui-url
-    JG-->>SDK: signed CDN URL
+    SDK->>JG: Load public CDN page
     SDK->>SDK: WebView loads trading UI
     SDK-->>App: onPaymentRequired
     App->>Backend: PATCH transaction (HMAC via backend)
@@ -40,7 +39,7 @@ sequenceDiagram
     SDK-->>App: Success / failure screen
 ```
 
-- **No UI hosting** — wrapper fetches signed CDN URL from Partner API.
+- **No UI hosting** — the wrapper loads `https://sdk.stage.justgold.app/latest/index.html` or `https://sdk.justgold.app/latest/index.html`.
 - **`sandbox: true`** → sandbox API + CDN; **`false`** (default) → production.
 - Partners do **not** pass API base URLs or deploy the UI bundle.
 
@@ -50,7 +49,7 @@ sequenceDiagram
 
 ```yaml
 dependencies:
-  justgold_sdk: ^1.1.22
+  justgold_sdk: ^1.1.23
 ```
 
 ```bash
@@ -326,8 +325,7 @@ Charge **`grandTotal`**, not `amount`. The `amount` field is the subtotal exclud
 | `token` | **Required.** Session JWT from your backend |
 | `refreshToken` | Enables silent token renewal |
 | `sandbox` | `true` → sandbox API + CDN; `false` → production |
-| `sdkUiSignedUrl` | Optional pre-signed CDN URL from your backend |
-| `sdkUrl` | Optional UI URL override (advanced) |
+| `sdkUrl` | Optional UI URL override (advanced). Omit this to use the public CDN |
 | `locale` | `'en'` or `'ar'` |
 | `theme` | `SdkTheme` — mode, colors, `PartnerBranding` |
 | `logLevel` | `debug` \| `info` \| `warn` \| `error` (default `warn`). Native API request/response console prints need `debug` **and** a debug build (`kDebugMode`) |
@@ -477,7 +475,7 @@ Custom WebView hosts must handle the event manually — see [Bridge reference](s
 
 ---
 
-## 13. In-SDK features (SDK 1.1.22)
+## 13. In-SDK features (SDK 1.1.23)
 
 Partners do not implement these screens — they are included in the embedded UI:
 
